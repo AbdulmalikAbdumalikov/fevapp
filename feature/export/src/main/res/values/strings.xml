@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_title">Eksport</string>
+    <string name="export_back">Orqaga</string>
+    <string name="export_quality">Sifat</string>
+    <string name="export_fps">Kadr tezligi</string>
+    <string name="export_fps_value">%1$d fps</string>
+    <string name="export_resolution_value">%1$dp</string>
+    <string name="export_hint">Video telefoningiz galereyasiga (Movies/Fevapp) saqlanadi. Internet kerak emas.</string>
+    <string name="export_start">Eksport qilish</string>
+    <string name="export_running">Eksport qilinmoqda…</string>
+    <string name="export_keep_open">Iltimos, ilovani yopmang</string>
+    <string name="export_cancel">Bekor qilish</string>
+    <string name="export_done">Galereyaga saqlandi!</string>
+    <string name="export_share">Ulashish</string>
+    <string name="export_finish">Tayyor</string>
+    <string name="export_share_title">Videoni ulashish</string>
+    <string name="export_failed">Eksportda xatolik yuz berdi. Qayta urinib koʻring yoki 720p ni tanlang.</string>
+    <string name="export_retry">Qayta urinish</string>
+    <string name="export_permission_needed">Galereyaga saqlash uchun ruxsat kerak</string>
+</resources>

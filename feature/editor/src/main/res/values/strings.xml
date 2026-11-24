@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Top bar -->
+    <string name="editor_back">Orqaga</string>
+    <string name="editor_undo">Bekor qilish</string>
+    <string name="editor_redo">Qaytarish</string>
+    <string name="editor_export">Eksport</string>
+
+    <!-- Preview controls -->
+    <string name="editor_play">Ijro etish</string>
+    <string name="editor_pause">Pauza</string>
+    <string name="editor_fullscreen">Toʻliq ekran</string>
+    <string name="editor_exit_fullscreen">Toʻliq ekrandan chiqish</string>
+    <string name="editor_zoom_in">Kattalashtirish</string>
+    <string name="editor_zoom_out">Kichiklashtirish</string>
+    <string name="editor_time">%1$s / %2$s</string>
+
+    <!-- Timeline -->
+    <string name="editor_add_clip">Klip qoʻshish</string>
+    <string name="editor_add_text">Matn qoʻshish</string>
+    <string name="editor_add_audio">Audio qoʻshish</string>
+    <string name="editor_trim_start">Boshini kesish</string>
+    <string name="editor_trim_end">Oxirini kesish</string>
+    <string name="editor_deselect">Tanlovni bekor qilish</string>
+    <string name="editor_empty">Klip yoʻq. Qoʻshish uchun “+” ni bosing.</string>
+
+    <!-- Tools: nothing selected -->
+    <string name="tool_edit">Kesish</string>
+    <string name="tool_audio">Audio</string>
+    <string name="tool_text">Matn</string>
+    <string name="tool_filter">Filtr</string>
+    <string name="tool_speed">Tezlik</string>
+    <string name="tool_captions">Subtitr</string>
+    <string name="tool_format">Format</string>
+
+    <!-- Tools: clip selected -->
+    <string name="tool_split">Boʻlish</string>
+    <string name="tool_delete">Oʻchirish</string>
+    <string name="tool_duplicate">Nusxa</string>
+    <string name="tool_move_left">Chapga</string>
+    <string name="tool_move_right">Oʻngga</string>
+    <string name="tool_volume">Ovoz</string>
+    <string name="tool_reverse">Teskari</string>
+
+    <!-- Sheets -->
+    <string name="sheet_close">Yopish</string>
+    <string name="sheet_apply">Qoʻllash</string>
+    <string name="sheet_coming_soon">Bu vosita keyingi yangilanishda qoʻshiladi. Fevapp doim bepul boʻlib qoladi.</string>
+    <string name="format_original">Asl</string>
+
+    <!-- Messages -->
+    <string name="msg_split_failed">Bu yerda boʻlib boʻlmaydi. Oʻynatgich chizigʻini klip ichiga qoʻying.</string>
+    <string name="msg_no_clip_here">Oʻynatgich chizigʻi ostida klip yoʻq</string>
+    <string name="msg_import_failed">Tanlangan fayllarni ochib boʻlmadi</string>
+    <string name="msg_project_missing">Loyiha topilmadi</string>
+    <string name="msg_empty_export">Eksport uchun avval klip qoʻshing</string>
+</resources>

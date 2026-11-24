@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window theme only; the UI itself is themed in Compose (FevTheme). -->
+    <style name="Theme.Fevapp" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/fev_background</item>
+        <item name="android:colorBackground">@color/fev_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <color name="fev_background">#FF111214</color>
+    <color name="fev_accent">#FF6EA8FE</color>
+    <color name="fev_text">#FFF3F4F6</color>
+</resources>

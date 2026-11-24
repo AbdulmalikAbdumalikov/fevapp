@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Uzbek (Latin) is the default language. Add values-en / values-ru later. -->
+<resources>
+    <string name="home_title">Fevapp</string>
+    <string name="home_new_project">Yangi loyiha</string>
+    <string name="home_new_project_hint">Video yoki rasmlarni tanlang</string>
+    <string name="home_recent">Soʻnggi loyihalar</string>
+    <string name="home_empty">Hali loyiha yoʻq. Boshlash uchun “Yangi loyiha”ni bosing.</string>
+    <string name="home_importing">Media yuklanmoqda…</string>
+    <string name="home_import_failed">Tanlangan fayllarni ochib boʻlmadi</string>
+    <string name="home_project_options">Loyiha amallari</string>
+    <string name="home_default_project_name">Loyiha %1$d</string>
+    <string name="home_copy_name">%1$s (nusxa)</string>
+
+    <string name="home_menu_rename">Nomini oʻzgartirish</string>
+    <string name="home_menu_duplicate">Nusxa olish</string>
+    <string name="home_menu_delete">Oʻchirish</string>
+
+    <string name="home_rename_title">Loyiha nomi</string>
+    <string name="home_delete_title">Loyihani oʻchirasizmi?</string>
+    <string name="home_delete_text">“%1$s” butunlay oʻchiriladi. Buni qaytarib boʻlmaydi.</string>
+
+    <string name="home_action_cancel">Bekor qilish</string>
+    <string name="home_action_save">Saqlash</string>
+    <string name="home_action_delete">Oʻchirish</string>
+</resources>
