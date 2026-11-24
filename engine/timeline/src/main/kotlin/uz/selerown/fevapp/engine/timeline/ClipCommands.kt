@@ -1,0 +1,119 @@
+package uz.selerown.fevapp.engine.timeline
+
+import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.Project
+
+/*
+ * Main-track clip commands for milestone 1.
+ * Every command returns the input instance unchanged when it cannot apply.
+ */
+
+/** Appends clips (in the given order) to the main track, or inserts at [atIndex]. */
+class AddClipsCommand(
+    private val clips: List<Clip>,
+    private val atIndex: Int? = null,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        if (clips.isEmpty()) return project
+        return project.updateMainTrack { track ->
+            val index = (atIndex ?: track.clips.size).coerceIn(0, track.clips.size)
+            track.copy(clips = track.clips.toMutableList().apply { addAll(index, clips) })
+        }
+    }
+}
+
+/** Sets a clip's source window. Values are clamped by [TimelineRules.clampTrim]. */
+class TrimClipCommand(
+    private val clipId: String,
+    private val trimStartUs: Long,
+    private val trimEndUs: Long,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val track = project.mainTrack
+        val index = track.indexOf(clipId)
+        if (index < 0) return project
+        val clip = track.clips[index]
+        val (start, end) = TimelineRules.clampTrim(clip, trimStartUs, trimEndUs)
+        if (start == clip.trimStartUs && end == clip.trimEndUs) return project
+        val trimmed = clip.copy(trimStartUs = start, trimEndUs = end)
+        return project.updateMainTrack { t ->
+            t.copy(clips = t.clips.toMutableList().apply { set(index, trimmed) })
+        }
+    }
+}
+
+/**
+ * Splits the clip under [atTimeUs] into two clips. If [clipId] is given only
+ * that clip may be split. Both halves must be at least [Clip.MIN_DURATION_US].
+ */
+class SplitClipCommand(
+    private val atTimeUs: Long,
+    private val newClipId: String,
+    private val clipId: String? = null,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val position = TimelineRules.clipAt(project.mainTrack, atTimeUs) ?: return project
+        val clip = position.clip
+        if (clipId != null && clip.id != clipId) return project
+        val offset = position.offsetUs
+        if (offset < Clip.MIN_DURATION_US || clip.durationUs - offset < Clip.MIN_DURATION_US) {
+            return project
+        }
+        val splitSourceUs = clip.sourceTimeAt(offset)
+        val first = clip.copy(trimEndUs = splitSourceUs)
+        val second = clip.copy(id = newClipId, trimStartUs = splitSourceUs)
+        return project.updateMainTrack { t ->
+            t.copy(
+                clips = t.clips.toMutableList().apply {
+                    set(position.index, first)
+                    add(position.index + 1, second)
+                },
+            )
+        }
+    }
+}
+
+/** Removes a clip; the following clips move left (magnetic track). */
+class DeleteClipCommand(private val clipId: String) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        if (project.mainTrack.indexOf(clipId) < 0) return project
+        return project.updateMainTrack { t -> t.copy(clips = t.clips.filterNot { it.id == clipId }) }
+    }
+}
+
+/** Moves a clip to [toIndex] (index in the list AFTER removal semantics are handled). */
+class MoveClipCommand(
+    private val clipId: String,
+    private val toIndex: Int,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val clips = project.mainTrack.clips
+        val from = project.mainTrack.indexOf(clipId)
+        if (from < 0) return project
+        val target = toIndex.coerceIn(0, clips.lastIndex)
+        if (target == from) return project
+        return project.updateMainTrack { t ->
+            t.copy(
+                clips = t.clips.toMutableList().apply {
+                    val moved = removeAt(from)
+                    add(target, moved)
+                },
+            )
+        }
+    }
+}
+
+/** Inserts a copy of a clip right after the original. */
+class DuplicateClipCommand(
+    private val clipId: String,
+    private val newClipId: String,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val index = project.mainTrack.indexOf(clipId)
+        if (index < 0) return project
+        val copy = project.mainTrack.clips[index].copy(id = newClipId)
+        return project.updateMainTrack { t ->
+            t.copy(clips = t.clips.toMutableList().apply { add(index + 1, copy) })
+        }
+    }
+}
