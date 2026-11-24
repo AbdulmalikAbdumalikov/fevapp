@@ -1,6 +1,7 @@
 package uz.selerown.fevapp.feature.export
 
 import android.Manifest
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -229,10 +230,13 @@ private fun needsLegacyPermission(context: Context): Boolean =
         PackageManager.PERMISSION_GRANTED
 
 private fun share(context: Context, uri: Uri) {
+    val title = context.getString(R.string.export_share_title)
     val send = Intent(Intent.ACTION_SEND).apply {
         type = "video/mp4"
         putExtra(Intent.EXTRA_STREAM, uri)
+        // ClipData gives the share sheet a proper preview/name instead of the raw MediaStore id.
+        clipData = ClipData.newUri(context.contentResolver, "Fevapp", uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(send, context.getString(R.string.export_share_title)))
+    context.startActivity(Intent.createChooser(send, title))
 }

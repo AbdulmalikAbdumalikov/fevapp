@@ -112,16 +112,23 @@ internal fun ClipItem(
             },
     ) {
         ClipThumbnails(clip, trimStart, widthPx, pxPerUs)
-        Text(
-            TimeFormat.short(((trimEnd - trimStart) / clip.speed).toLong()),
-            style = MaterialTheme.typography.labelSmall,
-            color = c.textPrimary,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = if (selected) HandleWidth + 2.dp else 4.dp, bottom = 2.dp)
-                .background(c.background.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
-                .padding(horizontal = 4.dp),
-        )
+        // Duration label: single line, and only when there is room for it
+        // (between the trim handles when the clip is selected).
+        val reservedPx = with(density) { (if (selected) HandleWidth * 2 else 0.dp).toPx() + 40.dp.toPx() }
+        if (widthPx >= reservedPx) {
+            Text(
+                TimeFormat.short(((trimEnd - trimStart) / clip.speed).toLong()),
+                style = MaterialTheme.typography.labelSmall,
+                color = c.textPrimary,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = if (selected) HandleWidth + 2.dp else 4.dp, bottom = 2.dp)
+                    .background(c.background.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp),
+            )
+        }
         if (selected) {
             TrimHandle(clip, isStart = true, pxPerUs, onTrimDrag, onTrimEnd, stringResource(R.string.editor_trim_start))
             TrimHandle(clip, isStart = false, pxPerUs, onTrimDrag, onTrimEnd, stringResource(R.string.editor_trim_end))
