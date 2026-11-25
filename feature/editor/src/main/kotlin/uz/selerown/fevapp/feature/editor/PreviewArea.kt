@@ -10,6 +10,13 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import kotlin.math.roundToInt
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.key
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -58,6 +65,11 @@ internal fun PreviewArea(
     textDraft: TextDraft?,
     onTextDrag: (id: String, x: Float, y: Float) -> Unit,
     onTextDragEnd: () -> Unit,
+    overlayPlayers: Map<String, Player>,
+    selectedOverlayId: String?,
+    overlayDraft: TextDraft?,
+    onOverlayDrag: (id: String, x: Float, y: Float) -> Unit,
+    onOverlayDragEnd: () -> Unit,
     isPlaying: Boolean,
     fullscreen: Boolean,
     onTogglePlay: () -> Unit,
@@ -103,6 +115,15 @@ internal fun PreviewArea(
                     indication = null,
                     onClick = onTogglePlay,
                 ),
+        )
+        OverlayLayer(
+            project = project,
+            positionUs = positionUs,
+            players = overlayPlayers,
+            selectedId = selectedOverlayId,
+            draft = overlayDraft,
+            onDrag = onOverlayDrag,
+            onDragEnd = onOverlayDragEnd,
         )
         TextLayer(
             project = project,
@@ -193,6 +214,85 @@ private fun TextLayer(
         }
         Canvas(Modifier.align(Alignment.Center).size(width, height).then(gestures)) {
             drawIntoCanvas { TextRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), visible, positionUs) }
+        }
+    }
+}
+
+/**
+ * Picture-in-picture clips visible at [positionUs], each in its own small
+ * player view placed like in the export. The selected one has an accent
+ * border and can be dragged (the "Joylashuv" sheet does the same with sliders).
+ */
+@Composable
+private fun BoxScope.OverlayLayer(
+    project: Project,
+    positionUs: Long,
+    players: Map<String, Player>,
+    selectedId: String?,
+    draft: TextDraft?,
+    onDrag: (String, Float, Float) -> Unit,
+    onDragEnd: () -> Unit,
+) {
+    val c = FevTheme.colors
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.matchParentSize()) {
+        val frameW = constraints.maxWidth.toFloat()
+        val frameH = constraints.maxHeight.toFloat()
+        project.overlayClips.filter { it.isVisibleAt(positionUs) || it.id == selectedId && draft?.id == it.id }.forEach { clip ->
+            val player = players[clip.id] ?: return@forEach
+            val cx = if (draft?.id == clip.id) draft.x else clip.centerX
+            val cy = if (draft?.id == clip.id) draft.y else clip.centerY
+            val wPx = frameW * clip.scale
+            val aspect = clip.source.height.toFloat().coerceAtLeast(1f) / clip.source.width.toFloat().coerceAtLeast(1f)
+            val hPx = wPx * aspect
+            key(clip.id) {
+                val latestClip by rememberUpdatedState(clip)
+                val drag by rememberUpdatedState(onDrag)
+                val end by rememberUpdatedState(onDragEnd)
+                val selected = clip.id == selectedId
+                Box(
+                    Modifier
+                        .offset { IntOffset((cx * frameW - wPx / 2).roundToInt(), (cy * frameH - hPx / 2).roundToInt()) }
+                        .size(with(density) { wPx.toDp() }, with(density) { hPx.toDp() })
+                        .then(if (selected) Modifier.border(2.dp, c.accent) else Modifier)
+                        .then(
+                            if (!selected) {
+                                Modifier
+                            } else {
+                                Modifier.pointerInput(clip.id) {
+                                    var x = 0f
+                                    var y = 0f
+                                    detectDragGestures(
+                                        onDragStart = { x = latestClip.centerX; y = latestClip.centerY },
+                                        onDrag = { change, amount ->
+                                            change.consume()
+                                            x = (x + amount.x / frameW).coerceIn(0f, 1f)
+                                            y = (y + amount.y / frameH).coerceIn(0f, 1f)
+                                            drag(latestClip.id, x, y)
+                                        },
+                                        onDragEnd = { end() },
+                                        onDragCancel = { end() },
+                                    )
+                                }
+                            },
+                        ),
+                ) {
+                    AndroidView(
+                        factory = { ctx ->
+                            (LayoutInflater.from(ctx).inflate(R.layout.preview_player_view, null) as PlayerView).apply {
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                )
+                                this.player = player
+                            }
+                        },
+                        update = { it.player = player },
+                        onRelease = { it.player = null },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
         }
     }
 }

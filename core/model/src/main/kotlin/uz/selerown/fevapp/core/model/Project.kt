@@ -22,6 +22,8 @@ data class Project(
     val textClips: List<TextClip> = emptyList(),
     /** Free-positioned clips on the audio lane (music, extracted audio; may overlap). */
     val audioClips: List<AudioClip> = emptyList(),
+    /** Picture-in-picture clips drawn over the main track (may overlap). */
+    val overlayClips: List<OverlayClip> = emptyList(),
 ) {
     /** The magnetic main video track. Always present. */
     val mainTrack: Track

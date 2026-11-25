@@ -72,6 +72,10 @@ internal fun EditorScreen(
             micPermission.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
+    val overlayPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        viewModel.addOverlay(uri)
+    }
+    val overlayPlayers by viewModel.preview.overlayPlayers.collectAsStateWithLifecycle()
     val videoSoundPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         viewModel.addAudio(uri)
     }
@@ -82,6 +86,8 @@ internal fun EditorScreen(
                 is EditorEvent.Message -> snackbar.showSnackbar(context.getString(event.text))
                 is EditorEvent.OpenExport -> onExport(event.projectId)
                 EditorEvent.Close -> onBack()
+                EditorEvent.PickOverlay ->
+                    overlayPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
             }
         }
     }
@@ -110,6 +116,11 @@ internal fun EditorScreen(
                 textDraft = state.textDraft,
                 onTextDrag = viewModel::onTextDrag,
                 onTextDragEnd = viewModel::onTextDragEnd,
+                overlayPlayers = overlayPlayers,
+                selectedOverlayId = state.selection?.takeIf { it.lane == Lane.OVERLAY }?.id,
+                overlayDraft = state.overlayDraft,
+                onOverlayDrag = viewModel::onOverlayDrag,
+                onOverlayDragEnd = viewModel::onOverlayDragEnd,
                 isPlaying = isPlaying,
                 fullscreen = true,
                 onTogglePlay = viewModel::togglePlay,
@@ -135,6 +146,11 @@ internal fun EditorScreen(
                     textDraft = state.textDraft,
                     onTextDrag = viewModel::onTextDrag,
                     onTextDragEnd = viewModel::onTextDragEnd,
+                    overlayPlayers = overlayPlayers,
+                    selectedOverlayId = state.selection?.takeIf { it.lane == Lane.OVERLAY }?.id,
+                    overlayDraft = state.overlayDraft,
+                    onOverlayDrag = viewModel::onOverlayDrag,
+                    onOverlayDragEnd = viewModel::onOverlayDragEnd,
                     isPlaying = isPlaying,
                     fullscreen = false,
                     onTogglePlay = viewModel::togglePlay,
@@ -169,6 +185,7 @@ internal fun EditorScreen(
                     onLaneTrim = viewModel::onLaneTrim,
                     onLaneDragEnd = viewModel::onLaneDragEnd,
                     onAddClip = openPicker,
+                    onAddOverlay = { viewModel.select(null); viewModel.onTool(EditorTool.OVERLAY) },
                     onAddText = { viewModel.select(null); viewModel.onTool(EditorTool.TEXT) },
                     onAddAudio = { viewModel.select(null); viewModel.onTool(EditorTool.AUDIO) },
                 )
@@ -208,6 +225,7 @@ internal fun EditorScreen(
             onPreviewColor = viewModel::previewColor,
             onSetColor = viewModel::setClipColor,
             onSetTransition = viewModel::setTransition,
+            onSetOverlayTransform = viewModel::setOverlayTransform,
         )
     }
 }

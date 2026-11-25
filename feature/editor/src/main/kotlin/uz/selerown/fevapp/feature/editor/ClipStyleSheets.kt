@@ -29,6 +29,7 @@ import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
+import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.TransitionType
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -217,6 +218,52 @@ internal fun TransitionSheet(
             style = MaterialTheme.typography.bodyMedium,
             color = c.textSecondary,
             modifier = Modifier.padding(top = 12.dp),
+        )
+    }
+}
+
+/** Position and size of a picture-in-picture clip (button alternative to dragging). */
+@Composable
+internal fun OverlaySheet(
+    clip: OverlayClip,
+    onDismiss: () -> Unit,
+    onApply: (centerX: Float, centerY: Float, scale: Float) -> Unit,
+) {
+    var x by remember { mutableFloatStateOf(clip.centerX) }
+    var y by remember { mutableFloatStateOf(clip.centerY) }
+    var scale by remember { mutableFloatStateOf(clip.scale) }
+    FevToolSheet(
+        title = stringResource(R.string.tool_overlay_transform),
+        closeLabel = stringResource(R.string.sheet_close),
+        applyLabel = stringResource(R.string.sheet_apply),
+        onDismiss = onDismiss,
+        onApply = { onApply(x, y, scale) },
+    ) {
+        FractionSlider(R.string.overlay_size, scale, OverlayClip.MIN_SCALE..OverlayClip.MAX_SCALE) { scale = it }
+        FractionSlider(R.string.overlay_x, x, 0f..1f) { x = it }
+        FractionSlider(R.string.overlay_y, y, 0f..1f) { y = it }
+        Text(
+            stringResource(R.string.overlay_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = FevTheme.colors.textSecondary,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun FractionSlider(@StringRes label: Int, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit) {
+    val c = FevTheme.colors
+    Column(Modifier.padding(top = 8.dp)) {
+        Row {
+            Text(stringResource(label), style = MaterialTheme.typography.titleSmall, color = c.textSecondary, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.value_percent, (value * 100).roundToInt()), style = MaterialTheme.typography.titleSmall, color = c.textPrimary)
+        }
+        Slider(
+            value = value,
+            onValueChange = { onChange((it * 100).roundToInt() / 100f) },
+            valueRange = range,
+            colors = SliderDefaults.colors(thumbColor = c.accent, activeTrackColor = c.accent),
         )
     }
 }

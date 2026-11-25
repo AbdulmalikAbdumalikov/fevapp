@@ -24,6 +24,7 @@ import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
@@ -35,6 +36,11 @@ import uz.selerown.fevapp.engine.render.Waveform
 import uz.selerown.fevapp.engine.render.WaveformLoader
 import uz.selerown.fevapp.engine.timeline.AddAudioCommand
 import uz.selerown.fevapp.engine.timeline.AddClipsCommand
+import uz.selerown.fevapp.engine.timeline.AddOverlayCommand
+import uz.selerown.fevapp.engine.timeline.DeleteOverlayCommand
+import uz.selerown.fevapp.engine.timeline.MoveOverlayCommand
+import uz.selerown.fevapp.engine.timeline.SetOverlayTransformCommand
+import uz.selerown.fevapp.engine.timeline.TrimOverlayCommand
 import uz.selerown.fevapp.engine.timeline.AddTextCommand
 import uz.selerown.fevapp.engine.timeline.DeleteAudioCommand
 import uz.selerown.fevapp.engine.timeline.DeleteClipCommand
@@ -144,6 +150,7 @@ class EditorViewModel @Inject constructor(
         val selection = _state.value.selection
         when (tool) {
             EditorTool.EDIT -> selectClipAtPlayhead()
+            EditorTool.OVERLAY -> viewModelScope.launch { _events.send(EditorEvent.PickOverlay) }
             EditorTool.SPEED -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_SPEED)
             EditorTool.FILTER -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_FILTER)
             EditorTool.SPLIT -> split(selection)
@@ -208,6 +215,7 @@ class EditorViewModel @Inject constructor(
             Lane.MAIN -> DeleteClipCommand(selection.id)
             Lane.TEXT -> DeleteTextCommand(selection.id)
             Lane.AUDIO -> DeleteAudioCommand(selection.id)
+            Lane.OVERLAY -> DeleteOverlayCommand(selection.id)
         }
         execute(command)
         select(null)
@@ -218,7 +226,7 @@ class EditorViewModel @Inject constructor(
         when (selection.lane) {
             Lane.MAIN -> execute(DuplicateClipCommand(selection.id, ids.newId()))
             Lane.TEXT -> execute(DuplicateTextCommand(selection.id, ids.newId()))
-            Lane.AUDIO -> Unit
+            Lane.AUDIO, Lane.OVERLAY -> Unit
         }
     }
 
@@ -295,6 +303,49 @@ class EditorViewModel @Inject constructor(
         _state.update { it.copy(textDraft = null) }
         val clip = current?.textClips?.firstOrNull { it.id == draft.id } ?: return
         execute(UpdateTextCommand(clip.id, clip.text, clip.style.copy(positionX = draft.x, positionY = draft.y)))
+    }
+
+    // ---- Overlays (picture-in-picture) -----------------------------------
+
+    /** Adds a video or photo on top of the main track at the playhead. */
+    fun addOverlay(uri: Uri?) {
+        uri ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(importing = true) }
+            val clip = importer.import(listOf(uri)).firstOrNull()
+            _state.update { it.copy(importing = false) }
+            if (clip == null) {
+                message(R.string.msg_import_failed)
+                return@launch
+            }
+            val overlay = OverlayClip(
+                id = ids.newId(),
+                source = clip.source,
+                startUs = positionUs.value,
+                trimStartUs = clip.trimStartUs,
+                trimEndUs = clip.trimEndUs,
+            )
+            if (execute(AddOverlayCommand(overlay))) select(Selection(Lane.OVERLAY, overlay.id))
+        }
+    }
+
+    fun setOverlayTransform(centerX: Float, centerY: Float, scale: Float) {
+        closeTool()
+        val id = _state.value.selection?.takeIf { it.lane == Lane.OVERLAY }?.id ?: return
+        execute(SetOverlayTransformCommand(id, centerX, centerY, scale))
+    }
+
+    /** Live drag of an overlay on the preview (center as 0..1 of the frame). */
+    fun onOverlayDrag(id: String, x: Float, y: Float) {
+        preview.pause()
+        _state.update { it.copy(overlayDraft = TextDraft(id, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))) }
+    }
+
+    fun onOverlayDragEnd() {
+        val draft = _state.value.overlayDraft ?: return
+        _state.update { it.copy(overlayDraft = null) }
+        val clip = current?.overlayClips?.firstOrNull { it.id == draft.id } ?: return
+        execute(SetOverlayTransformCommand(clip.id, draft.x, draft.y, clip.scale))
     }
 
     // ---- Audio ----------------------------------------------------------
@@ -438,6 +489,7 @@ class EditorViewModel @Inject constructor(
             Lane.TEXT -> project.textClips.firstOrNull { it.id == selection.id }
                 ?.let { SetTextTimingCommand(it.id, startUs, startUs + it.durationUs) }
             Lane.AUDIO -> MoveAudioCommand(selection.id, startUs)
+            Lane.OVERLAY -> MoveOverlayCommand(selection.id, startUs)
             Lane.MAIN -> null
         }
 
@@ -445,12 +497,14 @@ class EditorViewModel @Inject constructor(
         when (selection.lane) {
             Lane.TEXT -> SetTextTimingCommand(selection.id, startUs, endUs)
             Lane.AUDIO -> TrimAudioCommand(selection.id, startUs, endUs)
+            Lane.OVERLAY -> TrimOverlayCommand(selection.id, startUs, endUs)
             Lane.MAIN -> null
         }
 
     private fun laneTiming(project: Project, selection: Selection): Pair<Long, Long>? = when (selection.lane) {
         Lane.TEXT -> project.textClips.firstOrNull { it.id == selection.id }?.let { it.startUs to it.endUs }
         Lane.AUDIO -> project.audioClips.firstOrNull { it.id == selection.id }?.let { it.startUs to it.endUs }
+        Lane.OVERLAY -> project.overlayClips.firstOrNull { it.id == selection.id }?.let { it.startUs to it.endUs }
         Lane.MAIN -> null
     }
 
@@ -538,6 +592,7 @@ class EditorViewModel @Inject constructor(
         Lane.MAIN -> mainTrack.clips.any { it.id == selection.id }
         Lane.TEXT -> textClips.any { it.id == selection.id }
         Lane.AUDIO -> audioClips.any { it.id == selection.id }
+        Lane.OVERLAY -> overlayClips.any { it.id == selection.id }
     }
 
     private fun message(text: Int) {

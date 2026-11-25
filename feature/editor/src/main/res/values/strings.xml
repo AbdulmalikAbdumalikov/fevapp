@@ -19,6 +19,7 @@
     <string name="editor_add_clip">Klip qoʻshish</string>
     <string name="editor_add_text">Matn qoʻshish</string>
     <string name="editor_add_audio">Audio qoʻshish</string>
+    <string name="editor_add_overlay">Ustki qatlam qoʻshish</string>
     <string name="editor_trim_start">Boshini kesish</string>
     <string name="editor_trim_end">Oxirini kesish</string>
     <string name="editor_deselect">Tanlovni bekor qilish</string>
@@ -28,6 +29,8 @@
     <string name="tool_edit">Kesish</string>
     <string name="tool_audio">Audio</string>
     <string name="tool_text">Matn</string>
+    <string name="tool_overlay">Ustki qatlam</string>
+    <string name="tool_overlay_transform">Joylashuv</string>
     <string name="tool_filter">Filtr</string>
     <string name="tool_speed">Tezlik</string>
     <string name="tool_captions">Subtitr</string>
@@ -117,6 +120,12 @@
     <string name="transition_hint">Oʻtish shu klip bilan keyingisi orasida boʻladi. Kesilgan joyda timelineʼda belgi koʻrinadi.</string>
     <string name="transition_marker">Oʻtish</string>
 
+    <!-- Overlay sheet -->
+    <string name="overlay_size">Oʻlcham (kadr kengligiga nisbatan)</string>
+    <string name="overlay_x">Gorizontal joylashuv</string>
+    <string name="overlay_y">Vertikal joylashuv</string>
+    <string name="overlay_hint">Tanlangan ustki qatlamni videoda barmoq bilan ham surish mumkin. Uning ovozi ishlatilmaydi.</string>
+
     <!-- Audio sheets -->
     <string name="audio_add_music">Qurilmadan musiqa</string>
     <string name="audio_add_from_video">Videodan ovoz</string>
@@ -135,6 +144,7 @@
     <!-- Lane items (screen reader) -->
     <string name="lane_text_item">Matn: %1$s</string>
     <string name="lane_audio_item">Audio: %1$s</string>
+    <string name="lane_overlay_item">Ustki qatlam (video ustidagi kichik oyna)</string>
 
     <!-- Messages -->
     <string name="msg_split_failed">Bu yerda boʻlib boʻlmaydi. Oʻynatgich chizigʻini klip ichiga qoʻying.</string>

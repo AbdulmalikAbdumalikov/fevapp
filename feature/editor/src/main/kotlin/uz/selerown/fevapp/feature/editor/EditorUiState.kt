@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import uz.selerown.fevapp.core.model.Project
 
 /** The timeline row an item lives on. */
-enum class Lane { MAIN, TEXT, AUDIO }
+enum class Lane { MAIN, OVERLAY, TEXT, AUDIO }
 
 /** What is selected on the timeline (at most one item). */
 data class Selection(val lane: Lane, val id: String)
@@ -34,6 +34,8 @@ data class EditorUiState(
     val importing: Boolean = false,
     /** Live position of a text being dragged on the preview (committed on release). */
     val textDraft: TextDraft? = null,
+    /** Live position of an overlay being dragged on the preview. */
+    val overlayDraft: TextDraft? = null,
     /** Set while a voice-over is being recorded. */
     val recording: Recording? = null,
 ) {
@@ -52,4 +54,7 @@ sealed interface EditorEvent {
     data class Message(@StringRes val text: Int) : EditorEvent
     data class OpenExport(val projectId: String) : EditorEvent
     data object Close : EditorEvent
+
+    /** Ask the screen to open the Photo Picker for a picture-in-picture clip. */
+    data object PickOverlay : EditorEvent
 }

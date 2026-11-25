@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PictureInPicture
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +103,7 @@ internal fun TimelineView(
     onLaneTrim: (Selection, startUs: Long, endUs: Long) -> Unit,
     onLaneDragEnd: () -> Unit,
     onAddClip: () -> Unit,
+    onAddOverlay: () -> Unit,
     onAddText: () -> Unit,
     onAddAudio: () -> Unit,
     modifier: Modifier = Modifier,
@@ -127,13 +129,14 @@ internal fun TimelineView(
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
 
     // Lanes grow when clips overlap so every row stays 48 dp tall.
+    val overlayRows = laneRowCount(project.overlayClips.map { it.startUs to it.endUs })
     val textRows = laneRowCount(project.textClips.map { it.startUs to it.endUs })
     val audioRows = laneRowCount(project.audioClips.map { it.startUs to it.endUs })
 
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(RulerHeight + MainTrackHeight + LaneHeight * (textRows + audioRows) + 20.dp)
+            .height(RulerHeight + MainTrackHeight + LaneHeight * (overlayRows + textRows + audioRows) + 24.dp)
             .clipToBounds()
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -247,6 +250,32 @@ internal fun TimelineView(
                 )
             }
             Spacer(Modifier.height(6.dp))
+            LaneRow(
+                lane = Lane.OVERLAY,
+                items = project.overlayClips.map { clip ->
+                    LaneItemModel(
+                        clip.id,
+                        stringResource(R.string.tool_overlay),
+                        stringResource(R.string.lane_overlay_item),
+                        clip.startUs,
+                        clip.endUs,
+                    )
+                },
+                icon = Icons.Rounded.PictureInPicture,
+                fill = c.overlayClipFill,
+                addLabel = stringResource(R.string.editor_add_overlay),
+                xOf = xOf,
+                pxPerUs = pxPerUs,
+                viewportWidthPx = widthPx,
+                selection = selection,
+                draft = laneDraft,
+                onAdd = onAddOverlay,
+                onSelect = onSelect,
+                onMove = onLaneMove,
+                onTrim = onLaneTrim,
+                onDragEnd = onLaneDragEnd,
+            )
+            Spacer(Modifier.height(4.dp))
             LaneRow(
                 lane = Lane.TEXT,
                 items = project.textClips.map { clip ->

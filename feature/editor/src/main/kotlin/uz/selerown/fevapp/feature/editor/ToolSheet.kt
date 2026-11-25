@@ -46,6 +46,7 @@ internal fun ToolSheet(
     onPreviewColor: (ClipLook, ColorAdjust) -> Unit,
     onSetColor: (ClipLook, ColorAdjust, Boolean) -> Unit,
     onSetTransition: (TransitionType, Long, Boolean) -> Unit,
+    onSetOverlayTransform: (Float, Float, Float) -> Unit,
 ) {
     val selectedClip = project?.mainTrack?.clips?.firstOrNull { it.id == selection?.id }
     val selectedId = selection?.id
@@ -64,6 +65,9 @@ internal fun ToolSheet(
             ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.TRANSITION -> selectedClip?.let { TransitionSheet(it, onDismiss, onSetTransition) }
             ?: LaunchedEffect(Unit) { onDismiss() }
+        EditorTool.OVERLAY_TRANSFORM -> project?.overlayClips?.firstOrNull { it.id == selectedId }?.let {
+            OverlaySheet(it, onDismiss, onSetOverlayTransform)
+        } ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound, onRecordVoice)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
             ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)

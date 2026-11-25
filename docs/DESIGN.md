@@ -25,6 +25,7 @@
 | clipFill | `#2E3440` | Main-track clip background |
 | textClipFill | `#4B3B7A` | Text-lane clips |
 | audioClipFill | `#1E5A45` | Audio-lane clips |
+| overlayClipFill | `#7A4B2E` | Overlay (picture-in-picture) clips |
 
 ## Typography
 

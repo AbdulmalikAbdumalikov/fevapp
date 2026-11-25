@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.Project
 import kotlin.math.abs
 
@@ -42,6 +43,11 @@ class PreviewPlayer(private val context: Context) {
     private var durationUs: Long = 0L
     private val lanePlayers = mutableMapOf<String, LanePlayer>()
 
+    /** One small video player per overlay clip, shown by the UI over the preview. */
+    private val overlayEntries = mutableMapOf<String, OverlayPlayer>()
+    private val _overlayPlayers = MutableStateFlow<Map<String, ExoPlayer>>(emptyMap())
+    val overlayPlayers: StateFlow<Map<String, ExoPlayer>> = _overlayPlayers.asStateFlow()
+
     private val _positionUs = MutableStateFlow(0L)
     val positionUs: StateFlow<Long> = _positionUs.asStateFlow()
 
@@ -72,6 +78,7 @@ class PreviewPlayer(private val context: Context) {
         val clamped = timeUs.coerceIn(0L, durationUs)
         _positionUs.value = clamped
         updateLanePlayers(project.audioClips)
+        updateOverlayPlayers(project.overlayClips)
         if (newClips.isEmpty()) {
             player.clearMediaItems()
             return
@@ -113,12 +120,15 @@ class PreviewPlayer(private val context: Context) {
         }
         applyClipStyle()
         syncLanes()
+        syncOverlays()
     }
 
     fun release() {
         player.release()
         lanePlayers.values.forEach { it.exo.release() }
         lanePlayers.clear()
+        overlayEntries.values.forEach { it.exo.release() }
+        overlayEntries.clear()
     }
 
     // ---- Per-clip volume, speed and filter -------------------------------
@@ -204,6 +214,60 @@ class PreviewPlayer(private val context: Context) {
             exo.volume = if (muted) 0f else clip.gainAt(offsetUs)
         }
     }
+
+    // ---- Overlays (picture-in-picture) -----------------------------------
+
+    private class OverlayPlayer(var clip: OverlayClip, val exo: ExoPlayer)
+
+    private fun updateOverlayPlayers(overlays: List<OverlayClip>) {
+        val ids = overlays.map { it.id }.toSet()
+        overlayEntries.keys.filter { it !in ids }.forEach { overlayEntries.remove(it)?.exo?.release() }
+        overlays.forEach { clip ->
+            val existing = overlayEntries[clip.id]
+            when {
+                existing == null -> overlayEntries[clip.id] = OverlayPlayer(clip, createOverlayPlayer(clip))
+                existing.clip.sameWindow(clip) -> existing.clip = clip
+                else -> {
+                    existing.clip = clip
+                    existing.exo.setMediaItem(TimelineMapper.toMediaItem(clip))
+                    existing.exo.prepare()
+                }
+            }
+        }
+        _overlayPlayers.value = overlayEntries.mapValues { it.value.exo }
+    }
+
+    private fun createOverlayPlayer(clip: OverlayClip): ExoPlayer = ExoPlayer.Builder(context).build().apply {
+        volume = 0f // overlays are silent (the export removes their sound too)
+        setMediaItem(TimelineMapper.toMediaItem(clip))
+        prepare()
+    }
+
+    /** Plays overlays in sync while playing; while paused shows the frame under the playhead. */
+    private fun syncOverlays() {
+        val timeUs = _positionUs.value
+        val playing = player.isPlaying
+        overlayEntries.values.forEach { entry ->
+            val clip = entry.clip
+            val exo = entry.exo
+            val offsetMs = (timeUs - clip.startUs).coerceIn(0L, clip.durationUs) / 1000
+            val inside = clip.isVisibleAt(timeUs)
+            if (playing && inside) {
+                if (!exo.playWhenReady) {
+                    exo.seekTo(offsetMs)
+                    exo.play()
+                } else if (exo.isPlaying && abs(exo.currentPosition - offsetMs) > MAX_DRIFT_MS) {
+                    exo.seekTo(offsetMs)
+                }
+            } else {
+                if (exo.playWhenReady) exo.pause()
+                if (abs(exo.currentPosition - offsetMs) > MAX_DRIFT_MS) exo.seekTo(offsetMs)
+            }
+        }
+    }
+
+    private fun OverlayClip.sameWindow(other: OverlayClip) =
+        source.uri == other.source.uri && trimStartUs == other.trimStartUs && trimEndUs == other.trimEndUs
 
     private fun pauseLanes() = lanePlayers.values.forEach { if (it.exo.playWhenReady) it.exo.pause() }
 

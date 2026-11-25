@@ -98,3 +98,34 @@ data class AudioClip(
         const val MAX_FADE_US: Long = 5_000_000L
     }
 }
+
+/**
+ * A video or photo shown ON TOP of the main track (picture-in-picture).
+ * Timing works like an audio clip; [centerX]/[centerY] place its center in
+ * the frame (0..1) and [scale] is its width as a fraction of the frame width.
+ * Its own sound is not used (the main track and audio lane carry sound).
+ */
+@Serializable
+data class OverlayClip(
+    val id: String,
+    val source: MediaSource,
+    val startUs: Long,
+    val trimStartUs: Long,
+    val trimEndUs: Long,
+    val centerX: Float = 0.7f,
+    val centerY: Float = 0.3f,
+    val scale: Float = 0.45f,
+) {
+    val durationUs: Long
+        get() = trimEndUs - trimStartUs
+
+    val endUs: Long
+        get() = startUs + durationUs
+
+    fun isVisibleAt(timeUs: Long): Boolean = timeUs >= startUs && timeUs < endUs
+
+    companion object {
+        const val MIN_SCALE = 0.15f
+        const val MAX_SCALE = 1f
+    }
+}

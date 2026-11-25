@@ -16,6 +16,7 @@ import androidx.media3.transformer.Effects
 import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 
@@ -44,8 +45,14 @@ internal object CompositionFactory {
             // Photos have no sound: fill silence so the output always has audio.
             .experimentalSetForceAudioTrack(true)
             .build()
+        // Picture-in-picture: one video sequence per overlay, placed by the compositor.
+        val overlays = project.overlayClips.filter { it.startUs < project.durationUs }
+        val overlaySequences = overlays.map { overlaySequence(it, project.durationUs, size, settings) }
         val audio = project.audioClips.mapNotNull { audioSequence(it, project.durationUs) }
-        return Composition.Builder(listOf(main) + audio).build()
+        // Media3 draws input 0 on TOP, so overlays come first and the main track last.
+        return Composition.Builder(overlaySequences.reversed() + main + audio)
+            .apply { if (overlays.isNotEmpty()) setVideoCompositorSettings(OverlayCompositor(overlays)) }
+            .build()
     }
 
     private fun mainItem(
@@ -83,6 +90,43 @@ internal object CompositionFactory {
                 if (clip.volume == 0f) setRemoveAudio(true)
                 if (clip.speed != 1f) setSpeed(ClipEffects.speed(clip.speed))
             }
+            .build()
+    }
+
+    /**
+     * [gap until start] + overlay (scaled to its size, no sound) + [gap until
+     * the project ends]. Outside its time the compositor hides it (alpha 0).
+     */
+    private fun overlaySequence(
+        clip: OverlayClip,
+        projectDurationUs: Long,
+        size: OutputSize,
+        settings: ExportSettings,
+    ): EditedMediaItemSequence {
+        val visible = if (clip.endUs > projectDurationUs) {
+            clip.copy(trimEndUs = clip.trimStartUs + (projectDurationUs - clip.startUs))
+        } else {
+            clip
+        }
+        val (w, h) = OverlayCompositor.pixelSize(clip, size)
+        val item = EditedMediaItem.Builder(TimelineMapper.toMediaItem(visible))
+            .setRemoveAudio(true)
+            .setEffects(
+                Effects(
+                    emptyList(),
+                    listOf(
+                        Presentation.createForWidthAndHeight(w, h, Presentation.LAYOUT_SCALE_TO_FIT),
+                        FrameDropEffect.createDefaultFrameDropEffect(settings.frameRate.toFloat()),
+                    ),
+                ),
+            )
+            .apply { if (clip.source.type == MediaType.IMAGE) setFrameRate(settings.frameRate) }
+            .build()
+        val tail = projectDurationUs - visible.endUs
+        return EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_VIDEO))
+            .apply { if (visible.startUs > 0) addGap(visible.startUs) }
+            .addItem(item)
+            .apply { if (tail > 0) addGap(tail) }
             .build()
     }
 

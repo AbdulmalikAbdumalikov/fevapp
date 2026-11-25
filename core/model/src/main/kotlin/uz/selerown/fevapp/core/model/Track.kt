@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 /**
  * Kinds of rows in the timeline. MAIN_VIDEO clips live in [Track]; TEXT and
  * AUDIO lane clips are stored in [Project.textClips] / [Project.audioClips]
- * because they are free-positioned (not magnetic). OVERLAY is for Phase 3.
+ * because they are free-positioned (not magnetic); OVERLAY clips live in
+ * [Project.overlayClips].
  */
 @Serializable
 enum class TrackType { MAIN_VIDEO, OVERLAY, TEXT, AUDIO }

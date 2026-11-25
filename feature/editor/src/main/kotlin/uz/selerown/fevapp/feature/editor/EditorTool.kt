@@ -18,6 +18,8 @@ import androidx.compose.material.icons.rounded.FirstPage
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.LastPage
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.OpenWith
+import androidx.compose.material.icons.rounded.PictureInPicture
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.TextFields
@@ -37,6 +39,7 @@ enum class EditorTool(
     EDIT(R.string.tool_edit, Icons.Rounded.ContentCut, false),
     AUDIO(R.string.tool_audio, Icons.Rounded.MusicNote, true),
     TEXT(R.string.tool_text, Icons.Rounded.TextFields, true),
+    OVERLAY(R.string.tool_overlay, Icons.Rounded.PictureInPicture, false),
     // Filter / speed with nothing selected act on the clip under the playhead.
     FILTER(R.string.tool_filter, Icons.Rounded.Filter, false),
     SPEED(R.string.tool_speed, Icons.Rounded.Speed, false),
@@ -60,6 +63,7 @@ enum class EditorTool(
 
     // Text / audio lane item: button alternatives to dragging and trimming
     TEXT_EDIT(R.string.tool_text_edit, Icons.Rounded.Edit, true),
+    OVERLAY_TRANSFORM(R.string.tool_overlay_transform, Icons.Rounded.OpenWith, true),
     AUDIO_MIX(R.string.tool_volume, Icons.AutoMirrored.Rounded.VolumeUp, true),
     MOVE_HERE(R.string.tool_move_here, Icons.Rounded.Place, false),
     START_HERE(R.string.tool_start_here, Icons.Rounded.FirstPage, false),
@@ -67,7 +71,7 @@ enum class EditorTool(
     ;
 
     companion object {
-        val mainTools = listOf(EDIT, AUDIO, TEXT, FILTER, SPEED, CAPTIONS, FORMAT)
+        val mainTools = listOf(EDIT, AUDIO, TEXT, OVERLAY, FILTER, SPEED, CAPTIONS, FORMAT)
 
         /** Move left/right are the visible alternative to long-press dragging. */
         val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)
@@ -76,10 +80,13 @@ enum class EditorTool(
 
         val audioTools = listOf(AUDIO_MIX, SPLIT, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
+        val overlayTools = listOf(OVERLAY_TRANSFORM, DELETE, MOVE_HERE, START_HERE, END_HERE)
+
         fun toolsFor(lane: Lane?): List<EditorTool> = when (lane) {
             null -> mainTools
             Lane.MAIN -> clipTools
             Lane.TEXT -> textTools
+            Lane.OVERLAY -> overlayTools
             Lane.AUDIO -> audioTools
         }
     }

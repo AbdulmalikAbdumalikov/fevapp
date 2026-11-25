@@ -5,6 +5,7 @@ import androidx.media3.common.MediaItem
 import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.OverlayClip
 
 /**
  * Converts timeline clips into Media3 [MediaItem]s and maps between
@@ -38,6 +39,21 @@ object TimelineMapper {
                 .build(),
         )
         .build()
+
+    /** Overlay clip -> its window (photos get a fixed duration). */
+    fun toMediaItem(clip: OverlayClip): MediaItem {
+        val builder = MediaItem.Builder().setUri(Uri.parse(clip.source.uri)).setMediaId(clip.id)
+        return if (clip.source.type == MediaType.IMAGE) {
+            builder.setImageDurationMs(clip.durationUs / 1000).build()
+        } else {
+            builder.setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs(clip.trimStartUs / 1000)
+                    .setEndPositionMs(clip.trimEndUs / 1000)
+                    .build(),
+            ).build()
+        }
+    }
 
     /** Timeline time -> (playlist index, position inside the item in ms). */
     fun locate(clips: List<Clip>, timeUs: Long): Pair<Int, Long> {
