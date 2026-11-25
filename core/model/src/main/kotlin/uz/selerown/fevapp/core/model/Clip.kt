@@ -16,6 +16,10 @@ data class Clip(
     val trimEndUs: Long,
     val speed: Float = 1f,
     val volume: Float = 1f,
+    /** Ready-made color look (filter). */
+    val look: ClipLook = ClipLook.NONE,
+    /** Manual color adjustments, applied after [look]. */
+    val color: ColorAdjust = ColorAdjust(),
 ) {
     val sourceLengthUs: Long
         get() = trimEndUs - trimStartUs
@@ -35,6 +39,9 @@ data class Clip(
 
         /** A photo can be stretched up to this length. */
         const val MAX_IMAGE_DURATION_US: Long = 60_000_000L
+
+        const val MIN_SPEED = 0.25f
+        const val MAX_SPEED = 4f
     }
 }
 
@@ -50,3 +57,19 @@ data class MediaSource(
     val width: Int,
     val height: Int,
 )
+
+/** Ready-made color looks. Original names and values (not copied from any app). */
+@Serializable
+enum class ClipLook { NONE, MONO, NOIR, WARM, COOL, VIVID, FADED }
+
+/** Manual color adjustments, each in -1..1 (0 = unchanged). */
+@Serializable
+data class ColorAdjust(
+    val brightness: Float = 0f,
+    val contrast: Float = 0f,
+    val saturation: Float = 0f,
+    val warmth: Float = 0f,
+) {
+    val isNeutral: Boolean
+        get() = brightness == 0f && contrast == 0f && saturation == 0f && warmth == 0f
+}
