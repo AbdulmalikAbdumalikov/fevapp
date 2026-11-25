@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.feature.editor.R
+import uz.selerown.fevapp.engine.render.Waveform
 import uz.selerown.fevapp.feature.editor.Lane
 import uz.selerown.fevapp.feature.editor.LaneDraft
 import uz.selerown.fevapp.feature.editor.Selection
@@ -72,7 +73,10 @@ import kotlin.math.roundToInt
 
 private val RulerHeight = 22.dp
 private val MainTrackHeight = 64.dp
-private val LaneHeight = 44.dp
+private val LaneHeight = 48.dp // one row = minimum touch target
+
+/** A lane grows up to this many 48 dp rows; beyond that rows share the space. */
+private const val MAX_LANE_ROWS = 3
 
 /**
  * CapCut-style timeline: the playhead is FIXED in the center and the content
@@ -85,6 +89,7 @@ internal fun TimelineView(
     selection: Selection?,
     trimDraft: TrimDraft?,
     laneDraft: LaneDraft?,
+    waveforms: Map<String, Waveform>,
     dpPerSecond: Float,
     onZoom: (Float) -> Unit,
     onScrubStart: () -> Unit,
@@ -121,10 +126,14 @@ internal fun TimelineView(
     var draggingClipId by remember { mutableStateOf<String?>(null) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
 
+    // Lanes grow when clips overlap so every row stays 48 dp tall.
+    val textRows = laneRowCount(project.textClips.map { it.startUs to it.endUs })
+    val audioRows = laneRowCount(project.audioClips.map { it.startUs to it.endUs })
+
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(RulerHeight + MainTrackHeight + LaneHeight * 2 + 20.dp)
+            .height(RulerHeight + MainTrackHeight + LaneHeight * (textRows + audioRows) + 20.dp)
             .clipToBounds()
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -273,10 +282,13 @@ internal fun TimelineView(
                         stringResource(R.string.lane_audio_item, clip.name),
                         clip.startUs,
                         clip.endUs,
+                        sourceUri = clip.source.uri,
+                        sourceStartUs = clip.trimStartUs,
                     )
                 },
                 icon = Icons.Rounded.MusicNote,
                 fill = c.audioClipFill,
+                waveforms = waveforms,
                 addLabel = stringResource(R.string.editor_add_audio),
                 xOf = xOf,
                 pxPerUs = pxPerUs,
@@ -343,6 +355,7 @@ private fun LaneRow(
     items: List<LaneItemModel>,
     icon: ImageVector,
     fill: Color,
+    waveforms: Map<String, Waveform> = emptyMap(),
     addLabel: String,
     xOf: (Long) -> Float,
     pxPerUs: Float,
@@ -359,8 +372,9 @@ private fun LaneRow(
     // Overlapping clips get their own sub-row so none is hidden under another.
     val rows = remember(items) { packRows(items) }
     val rowCount = (rows.values.maxOrNull() ?: 0) + 1
-    val rowHeight = LaneHeight / rowCount
-    Box(Modifier.fillMaxWidth().height(LaneHeight)) {
+    val laneHeight = LaneHeight * minOf(rowCount, MAX_LANE_ROWS)
+    val rowHeight = laneHeight / rowCount
+    Box(Modifier.fillMaxWidth().height(laneHeight)) {
         items.forEach { item ->
             val itemSelection = Selection(lane, item.id)
             val itemDraft = draft?.takeIf { it.id == item.id }
@@ -380,6 +394,7 @@ private fun LaneRow(
                 selected = selection == itemSelection,
                 draftStartUs = itemDraft?.startUs,
                 draftEndUs = itemDraft?.endUs,
+                waveform = item.sourceUri?.let { waveforms[it] },
                 onTap = { onSelect(itemSelection) },
                 onMove = { onMove(itemSelection, it) },
                 onTrim = { s, e -> onTrim(itemSelection, s, e) },
@@ -414,6 +429,16 @@ private fun TransitionMarker(xPx: Float) {
     }
 }
 
+/** Number of 48 dp rows a lane needs (1..MAX_LANE_ROWS). */
+private fun laneRowCount(spans: List<Pair<Long, Long>>): Int {
+    val rowEnds = mutableListOf<Long>()
+    spans.sortedBy { it.first }.forEach { (start, end) ->
+        val row = rowEnds.indexOfFirst { it <= start }
+        if (row >= 0) rowEnds[row] = end else rowEnds += end
+    }
+    return rowEnds.size.coerceIn(1, MAX_LANE_ROWS)
+}
+
 /** Greedy interval packing: each clip goes to the first sub-row where it does not overlap. */
 private fun packRows(items: List<LaneItemModel>): Map<String, Int> {
     val rowEnds = mutableListOf<Long>()
@@ -433,7 +458,7 @@ private fun AddChip(text: String?, description: String, xPx: Float, onClick: () 
     Row(
         Modifier
             .offset { IntOffset(xPx.roundToInt(), 0) }
-            .fillMaxHeight()
+            .height(LaneHeight)
             .widthIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(c.surface)

@@ -44,6 +44,7 @@ internal fun EditorScreen(
     val positionUs by viewModel.positionUs.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val colorMatrix by viewModel.preview.colorMatrix.collectAsStateWithLifecycle()
+    val waveforms by viewModel.waveforms.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -147,6 +148,7 @@ internal fun EditorScreen(
                     selection = state.selection,
                     trimDraft = state.trimDraft,
                     laneDraft = state.laneDraft,
+                    waveforms = waveforms,
                     dpPerSecond = pxPerSecond,
                     onZoom = { factor -> pxPerSecond = TimelineZoom.clamp(pxPerSecond * factor) },
                     onScrubStart = viewModel::onScrubStart,

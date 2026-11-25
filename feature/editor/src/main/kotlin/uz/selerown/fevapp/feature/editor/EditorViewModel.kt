@@ -31,6 +31,8 @@ import uz.selerown.fevapp.core.model.TransitionType
 import uz.selerown.fevapp.engine.render.MediaImporter
 import uz.selerown.fevapp.engine.render.PreviewPlayer
 import uz.selerown.fevapp.engine.render.VoiceRecorder
+import uz.selerown.fevapp.engine.render.Waveform
+import uz.selerown.fevapp.engine.render.WaveformLoader
 import uz.selerown.fevapp.engine.timeline.AddAudioCommand
 import uz.selerown.fevapp.engine.timeline.AddClipsCommand
 import uz.selerown.fevapp.engine.timeline.AddTextCommand
@@ -71,6 +73,7 @@ class EditorViewModel @Inject constructor(
     private val repository: ProjectRepository,
     private val importer: MediaImporter,
     private val recorder: VoiceRecorder,
+    private val waveformLoader: WaveformLoader,
 ) : ViewModel() {
 
     private val projectId = savedStateHandle.toRoute<EditorRoute>().projectId
@@ -83,6 +86,9 @@ class EditorViewModel @Inject constructor(
     val preview = PreviewPlayer(context)
     val positionUs: StateFlow<Long> = preview.positionUs
     val isPlaying: StateFlow<Boolean> = preview.isPlaying
+
+    /** Waveforms of audio-lane sources, keyed by URI (filled in the background). */
+    val waveforms: StateFlow<Map<String, Waveform>> = waveformLoader.waveforms
 
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state.asStateFlow()
@@ -509,6 +515,9 @@ class EditorViewModel @Inject constructor(
             )
         }
         if (reloadPreview) preview.setProject(project, positionUs.value)
+        project.audioClips.map { it.source.uri }.distinct().forEach { uri ->
+            viewModelScope.launch { waveformLoader.request(uri) }
+        }
         if (save) viewModelScope.launch { repository.save(project) }
     }
 

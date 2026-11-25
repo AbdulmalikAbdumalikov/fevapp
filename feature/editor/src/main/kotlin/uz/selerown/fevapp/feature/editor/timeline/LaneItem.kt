@@ -1,5 +1,6 @@
 package uz.selerown.fevapp.feature.editor.timeline
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -25,6 +26,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -36,6 +38,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
+import uz.selerown.fevapp.engine.render.Waveform
 import kotlin.math.roundToInt
 
 private val Shape = RoundedCornerShape(6.dp)
@@ -48,6 +51,9 @@ internal data class LaneItemModel(
     val description: String,
     val startUs: Long,
     val endUs: Long,
+    /** Audio only: source file (for the waveform) and where the used window starts in it. */
+    val sourceUri: String? = null,
+    val sourceStartUs: Long = 0L,
 )
 
 /**
@@ -68,6 +74,7 @@ internal fun LaneItem(
     selected: Boolean,
     draftStartUs: Long?,
     draftEndUs: Long?,
+    waveform: Waveform? = null,
     onTap: () -> Unit,
     onMove: (startUs: Long) -> Unit,
     onTrim: (startUs: Long, endUs: Long) -> Unit,
@@ -115,6 +122,12 @@ internal fun LaneItem(
                 )
             },
     ) {
+        if (waveform != null) {
+            // A left trim moves the source window; a move keeps it.
+            val moved = endUs - startUs == model.endUs - model.startUs
+            val sourceStart = model.sourceStartUs + if (moved) 0L else startUs - model.startUs
+            WaveformBars(waveform, sourceStart, pxPerUs, visibleFromPx = -xPx, visibleToPx = viewportWidthPx - xPx, c.textPrimary.copy(alpha = 0.35f))
+        }
         Row(
             Modifier
                 .fillMaxSize()
@@ -135,6 +148,29 @@ internal fun LaneItem(
         if (selected) {
             EdgeHandle(model.id, isStart = true, current = { current }, scale = { scale }, onTrim, onDragEnd)
             EdgeHandle(model.id, isStart = false, current = { current }, scale = { scale }, onTrim, onDragEnd)
+        }
+    }
+}
+
+/** Vertical bars every 3 dp; only the part inside the viewport is drawn. */
+@Composable
+private fun WaveformBars(
+    waveform: Waveform,
+    sourceStartUs: Long,
+    pxPerUs: Float,
+    visibleFromPx: Float,
+    visibleToPx: Float,
+    color: Color,
+) {
+    Canvas(Modifier.fillMaxSize()) {
+        val step = 3.dp.toPx()
+        val centerY = size.height / 2
+        var x = (maxOf(0f, visibleFromPx) / step).toInt() * step
+        val end = minOf(size.width, visibleToPx)
+        while (x < end) {
+            val half = waveform.peakAt(sourceStartUs + (x / pxPerUs).toLong()) * size.height * 0.4f
+            drawLine(color, Offset(x, centerY - half - 1f), Offset(x, centerY + half + 1f), strokeWidth = step * 0.6f)
+            x += step
         }
     }
 }
