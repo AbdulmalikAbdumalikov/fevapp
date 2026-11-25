@@ -39,7 +39,7 @@ data class Clip(
 }
 
 @Serializable
-enum class MediaType { VIDEO, IMAGE }
+enum class MediaType { VIDEO, IMAGE, AUDIO }
 
 /** Metadata about an imported file (content:// URI from the Photo Picker). */
 @Serializable

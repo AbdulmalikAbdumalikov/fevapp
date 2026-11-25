@@ -2,7 +2,11 @@ package uz.selerown.fevapp.core.model
 
 import kotlinx.serialization.Serializable
 
-/** Kinds of rows in the timeline. Only MAIN_VIDEO is editable in milestone 1. */
+/**
+ * Kinds of rows in the timeline. MAIN_VIDEO clips live in [Track]; TEXT and
+ * AUDIO lane clips are stored in [Project.textClips] / [Project.audioClips]
+ * because they are free-positioned (not magnetic). OVERLAY is for Phase 3.
+ */
 @Serializable
 enum class TrackType { MAIN_VIDEO, OVERLAY, TEXT, AUDIO }
 
