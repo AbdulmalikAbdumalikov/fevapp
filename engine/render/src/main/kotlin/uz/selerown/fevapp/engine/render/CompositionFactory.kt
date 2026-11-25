@@ -152,7 +152,7 @@ internal object CompositionFactory {
                     listOf(
                         Presentation.createForWidthAndHeight(w, h, Presentation.LAYOUT_SCALE_TO_FIT),
                         FrameDropEffect.createDefaultFrameDropEffect(settings.frameRate.toFloat()),
-                    ),
+                    ) + if (clip.keying.isActive) listOf(KeyingEffect(clip.keying)) else emptyList(),
                 ),
             )
             .apply { if (clip.source.type == MediaType.IMAGE) setFrameRate(settings.frameRate) }

@@ -2,7 +2,9 @@ package uz.selerown.fevapp.engine.timeline
 
 import uz.selerown.fevapp.core.model.MediaSource
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.MaskShape
 import uz.selerown.fevapp.core.model.OverlayClip
+import uz.selerown.fevapp.core.model.OverlayKeying
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -35,6 +37,15 @@ class OverlayCommandsTest {
         assertEquals(1f, clip.centerX)
         assertEquals(0f, clip.centerY)
         assertEquals(OverlayClip.MAX_SCALE, clip.scale)
+    }
+
+    @Test
+    fun `keying is stored with a clamped strength`() {
+        val k = OverlayKeying(chroma = true, strength = 5f, mask = MaskShape.ELLIPSE)
+        val clip = SetOverlayKeyingCommand("o", k).apply(withPip()).overlayClips.single()
+        assertEquals(0.9f, clip.keying.strength)
+        assertEquals(MaskShape.ELLIPSE, clip.keying.mask)
+        assertEquals(true, clip.keying.isActive)
     }
 
     @Test

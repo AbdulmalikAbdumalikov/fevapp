@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Crop
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Diamond
+import androidx.compose.material.icons.rounded.Masks
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Filter
@@ -76,6 +77,7 @@ enum class EditorTool(
     TEXT_EDIT(R.string.tool_text_edit, Icons.Rounded.Edit, true),
     OVERLAY_TRANSFORM(R.string.tool_overlay_transform, Icons.Rounded.OpenWith, true),
     KEYFRAME(R.string.tool_keyframe, Icons.Rounded.Diamond, true),
+    KEYING(R.string.tool_keying, Icons.Rounded.Masks, true),
     AUDIO_MIX(R.string.tool_volume, Icons.AutoMirrored.Rounded.VolumeUp, true),
     MOVE_HERE(R.string.tool_move_here, Icons.Rounded.Place, false),
     START_HERE(R.string.tool_start_here, Icons.Rounded.FirstPage, false),
@@ -92,7 +94,7 @@ enum class EditorTool(
 
         val audioTools = listOf(AUDIO_MIX, VOICE, SPLIT, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
-        val overlayTools = listOf(OVERLAY_TRANSFORM, KEYFRAME, DELETE, MOVE_HERE, START_HERE, END_HERE)
+        val overlayTools = listOf(OVERLAY_TRANSFORM, KEYING, KEYFRAME, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
         fun toolsFor(lane: Lane?): List<EditorTool> = when (lane) {
             null -> mainTools

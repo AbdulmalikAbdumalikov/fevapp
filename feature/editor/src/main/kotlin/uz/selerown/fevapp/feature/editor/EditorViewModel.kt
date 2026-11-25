@@ -28,6 +28,7 @@ import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.stateAt
 import uz.selerown.fevapp.core.model.OverlayClip
+import uz.selerown.fevapp.core.model.OverlayKeying
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
@@ -47,6 +48,7 @@ import uz.selerown.fevapp.engine.timeline.SetTextKeyframeCommand
 import uz.selerown.fevapp.engine.timeline.AddOverlayCommand
 import uz.selerown.fevapp.engine.timeline.DeleteOverlayCommand
 import uz.selerown.fevapp.engine.timeline.MoveOverlayCommand
+import uz.selerown.fevapp.engine.timeline.SetOverlayKeyingCommand
 import uz.selerown.fevapp.engine.timeline.SetOverlayTransformCommand
 import uz.selerown.fevapp.engine.timeline.TrimOverlayCommand
 import uz.selerown.fevapp.engine.timeline.AddTextCommand
@@ -358,6 +360,12 @@ class EditorViewModel @Inject constructor(
             )
             if (execute(AddOverlayCommand(overlay))) select(Selection(Lane.OVERLAY, overlay.id))
         }
+    }
+
+    fun setOverlayKeying(keying: OverlayKeying) {
+        closeTool()
+        val id = _state.value.selection?.takeIf { it.lane == Lane.OVERLAY }?.id ?: return
+        execute(SetOverlayKeyingCommand(id, keying))
     }
 
     fun setOverlayTransform(centerX: Float, centerY: Float, scale: Float) {

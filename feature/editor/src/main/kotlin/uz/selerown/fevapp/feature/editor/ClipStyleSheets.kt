@@ -34,6 +34,8 @@ import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.core.model.OverlayClip
+import uz.selerown.fevapp.core.model.MaskShape
+import uz.selerown.fevapp.core.model.OverlayKeying
 import uz.selerown.fevapp.core.designsystem.component.FevSecondaryButton
 import uz.selerown.fevapp.core.model.TransitionType
 import kotlin.math.abs
@@ -384,6 +386,67 @@ internal fun CropSheet(
             FractionSlider(R.string.crop_right, 1f - t.right, 0f..max) { t = t.copy(right = (1f - it).coerceAtLeast(t.left + ClipTransform.MIN_SIZE)) }
             FractionSlider(R.string.crop_top, t.top, 0f..max) { t = t.copy(top = it.coerceAtMost(t.bottom - ClipTransform.MIN_SIZE)) }
             FractionSlider(R.string.crop_bottom, 1f - t.bottom, 0f..max) { t = t.copy(bottom = (1f - it).coerceAtLeast(t.top + ClipTransform.MIN_SIZE)) }
+        }
+    }
+}
+
+private val KeyColors = listOf(
+    0xFF00FF00.toInt() to R.string.color_green,
+    0xFF0000FF.toInt() to R.string.color_blue,
+    0xFFFFFFFF.toInt() to R.string.color_white,
+    0xFF000000.toInt() to R.string.color_black,
+)
+
+private val Masks = listOf(
+    MaskShape.NONE to R.string.mask_none,
+    MaskShape.ELLIPSE to R.string.mask_ellipse,
+    MaskShape.ROUNDED to R.string.mask_rounded,
+    MaskShape.LEFT_HALF to R.string.mask_left,
+    MaskShape.TOP_HALF to R.string.mask_top,
+)
+
+/** Chroma key (remove a background color) and mask shape for an overlay. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun KeyingSheet(current: OverlayKeying, onDismiss: () -> Unit, onApply: (OverlayKeying) -> Unit) {
+    var k by remember { mutableStateOf(current) }
+    FevToolSheet(
+        title = stringResource(R.string.tool_keying),
+        closeLabel = stringResource(R.string.sheet_close),
+        applyLabel = stringResource(R.string.sheet_apply),
+        onDismiss = onDismiss,
+        onApply = { onApply(k) },
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            SheetSection(R.string.keying_chroma)
+            ChoiceChip(stringResource(R.string.keying_chroma_on), k.chroma) { k = k.copy(chroma = !k.chroma) }
+            if (k.chroma) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    KeyColors.forEach { (argb, name) ->
+                        ColorSwatch(argb, stringResource(name), selected = k.keyColor == argb) { k = k.copy(keyColor = argb) }
+                    }
+                }
+                FractionSlider(R.string.keying_strength, k.strength, 0.05f..0.9f) { k = k.copy(strength = it) }
+            }
+            SheetSection(R.string.keying_mask)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Masks.forEach { (shape, label) ->
+                    ChoiceChip(stringResource(label), k.mask == shape) { k = k.copy(mask = shape) }
+                }
+            }
+            if (k.mask != MaskShape.NONE) {
+                ChoiceChip(stringResource(R.string.mask_invert), k.invert) { k = k.copy(invert = !k.invert) }
+            }
+            Text(
+                stringResource(R.string.keying_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = FevTheme.colors.textSecondary,
+                modifier = Modifier.padding(top = 12.dp),
+            )
         }
     }
 }

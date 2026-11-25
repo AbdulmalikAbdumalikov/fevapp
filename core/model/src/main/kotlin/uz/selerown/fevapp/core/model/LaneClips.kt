@@ -133,6 +133,8 @@ data class OverlayClip(
     val scale: Float = 0.45f,
     /** Animation of position/size/opacity (offsets from [startUs]); empty = still. */
     val keyframes: List<Keyframe> = emptyList(),
+    /** Chroma key and mask (what part of the overlay is shown). */
+    val keying: OverlayKeying = OverlayKeying(),
 ) {
     val durationUs: Long
         get() = trimEndUs - trimStartUs
@@ -146,4 +148,24 @@ data class OverlayClip(
         const val MIN_SCALE = 0.15f
         const val MAX_SCALE = 1f
     }
+}
+
+/** Shapes that keep part of an overlay visible. */
+@Serializable
+enum class MaskShape { NONE, ELLIPSE, ROUNDED, LEFT_HALF, TOP_HALF }
+
+/**
+ * Chroma key ([chroma]: remove pixels close to [keyColor]; [strength] 0..1 is
+ * how close counts) and mask ([mask], optionally [invert]ed).
+ */
+@Serializable
+data class OverlayKeying(
+    val chroma: Boolean = false,
+    val keyColor: Int = 0xFF00FF00.toInt(),
+    val strength: Float = 0.35f,
+    val mask: MaskShape = MaskShape.NONE,
+    val invert: Boolean = false,
+) {
+    val isActive: Boolean
+        get() = chroma || mask != MaskShape.NONE
 }

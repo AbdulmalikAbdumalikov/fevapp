@@ -56,6 +56,7 @@
     <!-- Tools: text / audio clip selected -->
     <string name="tool_text_edit">Tahrirlash</string>
     <string name="tool_keyframe">Kalit kadr</string>
+    <string name="tool_keying">Niqob</string>
     <string name="tool_move_here">Shu yerga</string>
     <string name="tool_start_here">Boshi shu yerda</string>
     <string name="tool_end_here">Oxiri shu yerda</string>
@@ -159,6 +160,19 @@
     <string name="keyframe_save">Kalit kadrni saqlash</string>
     <string name="keyframe_delete">Shu kalit kadrni oʻchirish</string>
     <string name="keyframe_hint">Oʻynatgich chizigʻini boshqa joyga surib, yana kalit kadr qoʻshing — element ular orasida silliq harakatlanadi. Kalit kadr boʻlsa, videoda surish ham shu joydagi kalit kadrni oʻzgartiradi.</string>
+
+    <!-- Keying sheet -->
+    <string name="keying_chroma">Chroma key (fon rangini olib tashlash)</string>
+    <string name="keying_chroma_on">Rangni olib tashlash</string>
+    <string name="keying_strength">Kuchi (qancha yaqin ranglar olinadi)</string>
+    <string name="keying_mask">Niqob shakli</string>
+    <string name="mask_none">Yoʻq</string>
+    <string name="mask_ellipse">Doira</string>
+    <string name="mask_rounded">Yumaloq burchak</string>
+    <string name="mask_left">Chap yarmi</string>
+    <string name="mask_top">Tepa yarmi</string>
+    <string name="mask_invert">Teskari</string>
+    <string name="keying_hint">Yashil fon oldida olingan videoni ustki qatlam qilib qoʻshing va yashil rangni olib tashlang — orqadan asosiy video koʻrinadi.</string>
 
     <!-- Voice sheet -->
     <string name="voice_none">Yoʻq</string>

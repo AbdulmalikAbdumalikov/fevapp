@@ -81,8 +81,8 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 |---|---|---|---|
 | Rasm ichida rasm (PiP) | ✅ | — | Ovozsiz |
 | Aralashtirish rejimlari (blend: screen, multiply…) | ⬜ | O' | Compositor sozlamalari / shader |
-| Niqob (mask: doira, to'rtburchak, chiziq) | ⬜ | O' | Alfa niqob shaderi |
-| Chroma key (yashil fon) | ⬜ | O' | Rang kaliti shaderi |
+| Niqob (mask: doira, yumaloq burchak, yarim, teskari) | ✅ | — | Ustki qatlam uchun; yumshoq chet (feather) — keyin |
+| Chroma key (yashil fon) | ✅ | — | Ustki qatlam uchun; preview Android 13+ da |
 | Fonni avtomatik olib tashlash | ⬜ | Q | 4-bosqich: MediaPipe segmentatsiya |
 | Harakatni kuzatish (motion tracking) | ⬜ | Q | |
 
@@ -119,7 +119,7 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 3. ✅ Matn konturi + shriftlar (yana animatsiyalar — keyin)
 4. **Klip kirish/chiqish animatsiyalari** va **asosiy klip zoom keyframe'lari**
 5. ✅ Ovoz o'zgartirgich (audio tezligi — keyin)
-6. **Chroma key** va **niqob**
+6. ✅ Chroma key va niqob
 7. **Crossfade o'tishlar**
 8. 4-bosqich (oflayn AI): subtitr, fonni olib tashlash, shovqinni kamaytirish
 

@@ -2,6 +2,7 @@ package uz.selerown.fevapp.engine.timeline
 
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.OverlayClip
+import uz.selerown.fevapp.core.model.OverlayKeying
 import uz.selerown.fevapp.core.model.Project
 
 /*
@@ -58,6 +59,16 @@ class SetOverlayTransformCommand(
             centerY = centerY.coerceIn(0f, 1f),
             scale = scale.coerceIn(OverlayClip.MIN_SCALE, OverlayClip.MAX_SCALE),
         )
+    }
+}
+
+/** Chroma key / mask of an overlay; strength is kept in a useful range. */
+class SetOverlayKeyingCommand(
+    private val clipId: String,
+    private val keying: OverlayKeying,
+) : TimelineCommand {
+    override fun apply(project: Project): Project = project.updateOverlay(clipId) {
+        it.copy(keying = keying.copy(strength = keying.strength.coerceIn(0.05f, 0.9f)))
     }
 }
 

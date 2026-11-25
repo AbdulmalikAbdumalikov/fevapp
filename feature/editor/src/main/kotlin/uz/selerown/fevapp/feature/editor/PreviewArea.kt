@@ -10,6 +10,15 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import uz.selerown.fevapp.engine.render.KeyingShaders
+import uz.selerown.fevapp.core.model.OverlayKeying
+import uz.selerown.fevapp.core.model.MaskShape
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.foundation.shape.CircleShape
+import android.os.Build
 import uz.selerown.fevapp.core.model.Clip
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -263,6 +272,7 @@ private fun BoxScope.OverlayLayer(
                         .offset { IntOffset(rect.left.roundToInt(), rect.top.roundToInt()) }
                         .size(with(density) { rect.width().toDp() }, with(density) { rect.height().toDp() })
                         .alpha(state.alpha)
+                        .keying(clip.keying)
                         .then(if (clip.id == selectedId) Modifier.border(2.dp, c.accent) else Modifier),
                 ) {
                     AndroidView(
@@ -465,4 +475,34 @@ private fun TransformedVideo(clip: Clip?, content: @Composable (Modifier) -> Uni
             )
         }
     }
+}
+
+/**
+ * Chroma key + mask in the preview: an AGSL RenderEffect on Android 13+
+ * (same formulas as the export). Older devices clip to the mask shape only.
+ */
+private fun Modifier.keying(keying: OverlayKeying): Modifier {
+    if (!keying.isActive) return this
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        return graphicsLayer {
+            val shader = android.graphics.RuntimeShader(KeyingShaders.AGSL).apply {
+                setFloatUniform("size", size.width, size.height)
+                val k = keying.keyColor
+                setFloatUniform("key", android.graphics.Color.red(k) / 255f, android.graphics.Color.green(k) / 255f, android.graphics.Color.blue(k) / 255f)
+                setFloatUniform("sim", keying.strength * 0.5f)
+                setIntUniform("chroma", if (keying.chroma) 1 else 0)
+                setIntUniform("mask", keying.mask.ordinal)
+                setIntUniform("invertMask", if (keying.invert) 1 else 0)
+            }
+            renderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
+        }
+    }
+    val shape = when (keying.mask) {
+        MaskShape.ELLIPSE -> CircleShape
+        MaskShape.ROUNDED -> RoundedCornerShape(18)
+        MaskShape.LEFT_HALF -> GenericShape { s, _ -> addRect(androidx.compose.ui.geometry.Rect(0f, 0f, s.width / 2, s.height)) }
+        MaskShape.TOP_HALF -> GenericShape { s, _ -> addRect(androidx.compose.ui.geometry.Rect(0f, 0f, s.width, s.height / 2)) }
+        MaskShape.NONE -> return this
+    }
+    return clip(shape)
 }
