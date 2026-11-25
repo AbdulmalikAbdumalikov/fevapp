@@ -179,8 +179,8 @@ class EditorViewModel @Inject constructor(
         if (positionUs.value !in start until end) preview.seekTo(start + minOf(100_000L, (end - start) / 2))
     }
 
-    fun applyFormat(format: CanvasFormat) {
-        execute(SetCanvasCommand(format))
+    fun applyFormat(format: CanvasFormat, backgroundColor: Int) {
+        execute(SetCanvasCommand(format, backgroundColor))
         closeTool()
     }
 

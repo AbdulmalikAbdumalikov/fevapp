@@ -1,6 +1,7 @@
 package uz.selerown.fevapp.feature.editor
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
@@ -34,7 +35,7 @@ internal fun ToolSheet(
     project: Project?,
     selection: Selection?,
     onDismiss: () -> Unit,
-    onApplyFormat: (CanvasFormat) -> Unit,
+    onApplyFormat: (CanvasFormat, Int) -> Unit,
     onSaveText: (editingId: String?, text: String, style: TextStyle) -> Unit,
     onPickMusic: () -> Unit,
     onPickVideoSound: () -> Unit,
@@ -70,7 +71,7 @@ internal fun ToolSheet(
         EditorTool.AUDIO_MIX -> project?.audioClips?.firstOrNull { it.id == selectedId }?.let { clip ->
             AudioMixSheet(clip, onDismiss, onSetAudioMix)
         } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)
-        else -> GenericSheet(tool, project?.canvas, onDismiss, onApplyFormat)
+        else -> GenericSheet(tool, project?.canvas, project?.backgroundColor, onDismiss, onApplyFormat)
     }
 }
 
@@ -80,24 +81,35 @@ internal fun ToolSheet(
 private fun GenericSheet(
     tool: EditorTool,
     currentFormat: CanvasFormat?,
+    currentBackground: Int?,
     onDismiss: () -> Unit,
-    onApplyFormat: (CanvasFormat) -> Unit,
+    onApplyFormat: (CanvasFormat, Int) -> Unit,
 ) {
     var format by remember { mutableStateOf(currentFormat ?: CanvasFormat.ORIGINAL) }
+    var background by remember { mutableStateOf(currentBackground ?: ContentPalette[1].first) }
     FevToolSheet(
         title = stringResource(tool.label),
         closeLabel = stringResource(R.string.sheet_close),
         applyLabel = stringResource(R.string.sheet_apply),
         onDismiss = onDismiss,
-        onApply = { if (tool == EditorTool.FORMAT) onApplyFormat(format) else onDismiss() },
+        onApply = { if (tool == EditorTool.FORMAT) onApplyFormat(format, background) else onDismiss() },
     ) {
         when (tool) {
-            EditorTool.FORMAT -> FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 12.dp),
-            ) {
-                CanvasFormat.entries.forEach { option ->
-                    ChoiceChip(option.label(), option == format) { format = option }
+            EditorTool.FORMAT -> Column {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 12.dp),
+                ) {
+                    CanvasFormat.entries.forEach { option ->
+                        ChoiceChip(option.label(), option == format) { format = option }
+                    }
+                }
+                SheetSection(R.string.format_background)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Black first: the classic bars.
+                    (listOf(ContentPalette[1]) + ContentPalette.filterIndexed { i, _ -> i != 1 }).forEach { (argb, name) ->
+                        ColorSwatch(argb, stringResource(name), selected = background == argb) { background = argb }
+                    }
                 }
             }
             else -> Text(

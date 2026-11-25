@@ -76,7 +76,7 @@ internal fun PreviewArea(
             Modifier
                 .align(Alignment.Center)
                 .size(frameWidth, frameHeight)
-                .background(Color.Black), // video content color, not a UI color
+                .background(Color(project.backgroundColor)), // video content color, not a UI color
         ) {
         AndroidView(
             factory = { ctx ->

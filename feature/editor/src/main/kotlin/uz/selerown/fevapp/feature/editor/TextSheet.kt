@@ -52,7 +52,7 @@ import uz.selerown.fevapp.core.model.TextStyle
  * Colors a user can give their text. These are CONTENT colors (they end up in
  * the video), not UI colors, so they live here and not in FevColors.
  */
-private val TextPalette: List<Pair<Int, Int>> = listOf(
+internal val ContentPalette: List<Pair<Int, Int>> = listOf(
     0xFFFFFFFF.toInt() to R.string.color_white,
     0xFF111214.toInt() to R.string.color_black,
     0xFFFFD54F.toInt() to R.string.color_yellow,
@@ -126,7 +126,7 @@ internal fun TextSheet(
 
             SheetSection(R.string.text_color)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextPalette.forEach { (argb, name) ->
+                ContentPalette.forEach { (argb, name) ->
                     ColorSwatch(argb, stringResource(name), selected = style.color == argb) {
                         style = style.copy(color = argb)
                     }
@@ -191,7 +191,7 @@ internal fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ColorSwatch(argb: Int, name: String, selected: Boolean, onClick: () -> Unit) {
+internal fun ColorSwatch(argb: Int, name: String, selected: Boolean, onClick: () -> Unit) {
     val c = FevTheme.colors
     Box(
         Modifier

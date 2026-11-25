@@ -8,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.FrameDropEffect
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
+import androidx.media3.effect.TextureOverlay
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
 import androidx.media3.transformer.EditedMediaItemSequence
@@ -29,13 +30,15 @@ import uz.selerown.fevapp.core.model.TextClip
  */
 internal object CompositionFactory {
 
+    private const val BLACK = 0xFF000000.toInt()
+
     fun create(project: Project, settings: ExportSettings): Composition {
         val size = OutputSizeCalculator.calculate(project, settings)
         val texts = project.textClips.filter { it.startUs < project.durationUs }
         var startUs = 0L
         val clips = project.mainTrack.clips
         val items = clips.mapIndexed { index, clip ->
-            mainItem(clips, index, startUs, texts, size, settings).also { startUs += clip.durationUs }
+            mainItem(clips, index, startUs, texts, project.backgroundColor, size, settings).also { startUs += clip.durationUs }
         }
         val main = EditedMediaItemSequence.Builder(items)
             // Photos have no sound: fill silence so the output always has audio.
@@ -50,6 +53,7 @@ internal object CompositionFactory {
         index: Int,
         startUs: Long,
         texts: List<TextClip>,
+        backgroundColor: Int,
         size: OutputSize,
         settings: ExportSettings,
     ): EditedMediaItem {
@@ -61,10 +65,16 @@ internal object CompositionFactory {
             Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_SCALE_TO_FIT),
             FrameDropEffect.createDefaultFrameDropEffect(settings.frameRate.toFloat()),
         )
+        val overlays = mutableListOf<TextureOverlay>()
+        // Colored background: paint the letterbox bars (overlays draw on top, so only the bars).
+        if (backgroundColor != BLACK) {
+            BackgroundBars.create(clip, size, backgroundColor)?.let { overlays += it }
+        }
         val visibleTexts = texts.filter { it.startUs < endUs && it.endUs > startUs }
         if (visibleTexts.isNotEmpty()) {
-            videoEffects += OverlayEffect(listOf(TimelineTextOverlay(visibleTexts, startUs, size.width, size.height)))
+            overlays += TimelineTextOverlay(visibleTexts, startUs, size.width, size.height)
         }
+        if (overlays.isNotEmpty()) videoEffects += OverlayEffect(overlays)
         val audioEffects = if (clip.source.type == MediaType.VIDEO) listOfNotNull(AudioGain.constant(clip.volume)) else emptyList()
         return EditedMediaItem.Builder(TimelineMapper.toMediaItem(clip))
             .setEffects(Effects(audioEffects, videoEffects))
