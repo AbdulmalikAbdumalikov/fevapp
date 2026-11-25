@@ -1,5 +1,7 @@
 package uz.selerown.fevapp.feature.editor
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
@@ -57,6 +60,17 @@ internal fun EditorScreen(
     val musicPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         viewModel.addAudio(uri)
     }
+    // Microphone permission is asked only when the user taps "Ovoz yozish".
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) viewModel.startVoiceOver() else viewModel.closeTool()
+    }
+    val recordVoice = {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.startVoiceOver()
+        } else {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
     val videoSoundPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         viewModel.addAudio(uri)
     }
@@ -71,6 +85,7 @@ internal fun EditorScreen(
         }
     }
 
+    BackHandler(enabled = state.recording != null) { viewModel.stopVoiceOver() }
     BackHandler(enabled = fullscreen) { fullscreen = false }
     BackHandler(enabled = !fullscreen && state.selection != null) { viewModel.select(null) }
 
@@ -147,7 +162,10 @@ internal fun EditorScreen(
                     onAddText = { viewModel.select(null); viewModel.onTool(EditorTool.TEXT) },
                     onAddAudio = { viewModel.select(null); viewModel.onTool(EditorTool.AUDIO) },
                 )
-                EditorToolbar(
+                val recording = state.recording
+                if (recording != null) {
+                    RecordingBar(recording, onStop = viewModel::stopVoiceOver)
+                } else EditorToolbar(
                     lane = state.selection?.lane,
                     onDeselect = { viewModel.select(null) },
                     onTool = viewModel::onTool,
@@ -170,6 +188,7 @@ internal fun EditorScreen(
             onApplyFormat = viewModel::applyFormat,
             onSaveText = viewModel::saveText,
             onPickMusic = { musicPicker.launch(arrayOf("audio/*")) },
+            onRecordVoice = recordVoice,
             onPickVideoSound = {
                 videoSoundPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
             },

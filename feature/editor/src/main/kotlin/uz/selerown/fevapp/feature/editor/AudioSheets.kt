@@ -30,11 +30,13 @@ internal fun AudioAddSheet(
     onDismiss: () -> Unit,
     onPickMusic: () -> Unit,
     onPickVideo: () -> Unit,
+    onRecordVoice: () -> Unit,
 ) {
     SimpleSheet(R.string.tool_audio, onDismiss, onApply = onDismiss) {
         Column(Modifier.padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FevSecondaryButton(stringResource(R.string.audio_add_music), onPickMusic, Modifier.fillMaxWidth())
             FevSecondaryButton(stringResource(R.string.audio_add_from_video), onPickVideo, Modifier.fillMaxWidth())
+            FevSecondaryButton(stringResource(R.string.audio_record_voice), onRecordVoice, Modifier.fillMaxWidth())
             Text(
                 stringResource(R.string.audio_hint),
                 style = MaterialTheme.typography.bodyMedium,

@@ -104,6 +104,10 @@
     <!-- Audio sheets -->
     <string name="audio_add_music">Qurilmadan musiqa</string>
     <string name="audio_add_from_video">Videodan ovoz</string>
+    <string name="audio_record_voice">Ovoz yozish (mikrofon)</string>
+    <string name="recording_label">Yozilmoqda… %1$s</string>
+    <string name="recording_stop">Toʻxtatish</string>
+    <string name="voice_clip_name">Ovoz yozuvi %1$d</string>
     <string name="audio_hint">Audio oʻynatgich chizigʻi turgan joydan boshlab qoʻshiladi.</string>
     <string name="volume_label">Ovoz balandligi</string>
     <string name="fade_in">Asta kirish</string>
@@ -124,6 +128,7 @@
     <string name="msg_extract_failed">Bu klipda ajratib olinadigan ovoz yoʻq</string>
     <string name="msg_playhead_outside">Avval oʻynatgich chizigʻini kerakli joyga qoʻying</string>
     <string name="msg_speed_photo">Rasm uchun tezlik yoʻq. Uzunligini kesish bilan oʻzgartiring.</string>
+    <string name="msg_record_failed">Ovoz yozib boʻlmadi. Mikrofon boshqa ilovada band boʻlishi mumkin.</string>
     <string name="msg_text_empty">Matn boʻsh boʻlmasligi kerak</string>
     <string name="msg_empty_export">Eksport uchun avval klip qoʻshing</string>
 </resources>

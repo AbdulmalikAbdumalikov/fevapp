@@ -345,10 +345,20 @@ private fun LaneRow(
     onDragEnd: () -> Unit,
 ) {
     val density = LocalDensity.current
+    // Overlapping clips get their own sub-row so none is hidden under another.
+    val rows = remember(items) { packRows(items) }
+    val rowCount = (rows.values.maxOrNull() ?: 0) + 1
+    val rowHeight = LaneHeight / rowCount
     Box(Modifier.fillMaxWidth().height(LaneHeight)) {
         items.forEach { item ->
             val itemSelection = Selection(lane, item.id)
             val itemDraft = draft?.takeIf { it.id == item.id }
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(rowHeight)
+                    .offset(y = rowHeight * (rows[item.id] ?: 0)),
+            ) {
             LaneItem(
                 model = item,
                 icon = icon,
@@ -364,11 +374,24 @@ private fun LaneRow(
                 onTrim = { s, e -> onTrim(itemSelection, s, e) },
                 onDragEnd = onDragEnd,
             )
+            }
         }
         val lastEnd = items.maxOfOrNull { it.endUs }
         val chipX = if (lastEnd == null) xOf(0L) else xOf(lastEnd) + with(density) { 8.dp.toPx() }
         AddChip(if (lastEnd == null) addLabel else null, addLabel, chipX, onAdd)
     }
+}
+
+/** Greedy interval packing: each clip goes to the first sub-row where it does not overlap. */
+private fun packRows(items: List<LaneItemModel>): Map<String, Int> {
+    val rowEnds = mutableListOf<Long>()
+    val result = mutableMapOf<String, Int>()
+    items.sortedBy { it.startUs }.forEach { item ->
+        val row = rowEnds.indexOfFirst { it <= item.startUs }.takeIf { it >= 0 } ?: rowEnds.size.also { rowEnds += 0L }
+        rowEnds[row] = item.endUs
+        result[item.id] = row
+    }
+    return result
 }
 
 /** "+ Matn qoʻshish" chip; icon-only (with the same spoken label) when the lane has clips. */

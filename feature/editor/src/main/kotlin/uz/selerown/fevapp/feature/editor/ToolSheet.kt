@@ -37,6 +37,7 @@ internal fun ToolSheet(
     onSaveText: (editingId: String?, text: String, style: TextStyle) -> Unit,
     onPickMusic: () -> Unit,
     onPickVideoSound: () -> Unit,
+    onRecordVoice: () -> Unit,
     onSetClipVolume: (Float) -> Unit,
     onSetAudioMix: (volume: Float, fadeInUs: Long, fadeOutUs: Long) -> Unit,
     onSetSpeed: (Float) -> Unit,
@@ -58,7 +59,7 @@ internal fun ToolSheet(
             ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.CLIP_FILTER -> selectedClip?.let { FilterSheet(it, onPreviewColor, onDismiss, onSetColor) }
             ?: LaunchedEffect(Unit) { onDismiss() }
-        EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound)
+        EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound, onRecordVoice)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
             ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)
         } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)

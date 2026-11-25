@@ -26,6 +26,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -142,5 +148,32 @@ internal fun EditorToolbar(
                 )
             }
         }
+    }
+}
+
+/** Replaces the tool bar while a voice-over is recorded: red dot, elapsed time, big Stop button. */
+@Composable
+internal fun RecordingBar(recording: Recording, onStop: () -> Unit) {
+    val c = FevTheme.colors
+    var elapsedMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(recording) {
+        while (true) {
+            elapsedMs = System.currentTimeMillis() - recording.startedAtMillis
+            delay(200)
+        }
+    }
+    HorizontalDivider(color = c.border)
+    Row(
+        Modifier.fillMaxWidth().background(c.surface).padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(14.dp).clip(CircleShape).background(c.danger))
+        Text(
+            stringResource(R.string.recording_label, TimeFormat.clock(elapsedMs * 1000)),
+            style = MaterialTheme.typography.titleMedium,
+            color = c.textPrimary,
+            modifier = Modifier.padding(start = 12.dp).weight(1f),
+        )
+        FevPrimaryButton(text = stringResource(R.string.recording_stop), onClick = onStop)
     }
 }

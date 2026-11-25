@@ -29,6 +29,7 @@ import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
 import uz.selerown.fevapp.engine.render.MediaImporter
 import uz.selerown.fevapp.engine.render.PreviewPlayer
+import uz.selerown.fevapp.engine.render.VoiceRecorder
 import uz.selerown.fevapp.engine.timeline.AddAudioCommand
 import uz.selerown.fevapp.engine.timeline.AddClipsCommand
 import uz.selerown.fevapp.engine.timeline.AddTextCommand
@@ -67,6 +68,7 @@ class EditorViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: ProjectRepository,
     private val importer: MediaImporter,
+    private val recorder: VoiceRecorder,
 ) : ViewModel() {
 
     private val projectId = savedStateHandle.toRoute<EditorRoute>().projectId
@@ -318,6 +320,48 @@ class EditorViewModel @Inject constructor(
         execute(SetClipColorCommand(if (applyToAll) null else id ?: return, look, color))
     }
 
+    // ---- Voice-over -----------------------------------------------------
+
+    /**
+     * Starts recording from the microphone at the playhead. The video plays
+     * MUTED meanwhile so the speaker is not recorded too.
+     */
+    fun startVoiceOver() {
+        closeTool()
+        if (_state.value.recording != null) return
+        if (!recorder.start()) {
+            message(R.string.msg_record_failed)
+            return
+        }
+        select(null)
+        _state.update { it.copy(recording = Recording(positionUs.value, System.currentTimeMillis())) }
+        preview.muted = true
+        preview.play()
+    }
+
+    /** Stops recording and puts the voice-over on the audio lane. */
+    fun stopVoiceOver() {
+        val recording = _state.value.recording ?: return
+        preview.pause()
+        preview.muted = false
+        _state.update { it.copy(recording = null) }
+        val file = recorder.stop()
+        if (file == null) {
+            message(R.string.msg_record_failed)
+            return
+        }
+        viewModelScope.launch {
+            val clip = importer.importAudio(Uri.fromFile(file), recording.startUs)
+            if (clip == null) {
+                message(R.string.msg_record_failed)
+                return@launch
+            }
+            val number = (current?.audioClips?.count { it.source.uri.startsWith("file:") } ?: 0) + 1
+            val named = clip.copy(name = context.getString(R.string.voice_clip_name, number))
+            if (execute(AddAudioCommand(named))) select(Selection(Lane.AUDIO, named.id))
+        }
+    }
+
     fun setClipVolume(volume: Float) {
         closeTool()
         _state.value.selectedClipId?.let { execute(SetClipVolumeCommand(it, volume)) }
@@ -465,6 +509,7 @@ class EditorViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        recorder.stop()
         preview.release()
     }
 }

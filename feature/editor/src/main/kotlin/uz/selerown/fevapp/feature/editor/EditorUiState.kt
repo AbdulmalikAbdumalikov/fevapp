@@ -32,11 +32,16 @@ data class EditorUiState(
     val canRedo: Boolean = false,
     val openTool: EditorTool? = null,
     val importing: Boolean = false,
+    /** Set while a voice-over is being recorded. */
+    val recording: Recording? = null,
 ) {
     /** Selected main-track clip, if the selection is on the main track. */
     val selectedClipId: String?
         get() = selection?.takeIf { it.lane == Lane.MAIN }?.id
 }
+
+/** A voice-over in progress: where it will be placed and when it started (wall clock). */
+data class Recording(val startUs: Long, val startedAtMillis: Long)
 
 sealed interface EditorEvent {
     data class Message(@StringRes val text: Int) : EditorEvent
