@@ -37,6 +37,12 @@ class ExportViewModel @Inject constructor(
         ExportUiState(s, if (job.projectId == projectId) job.phase else ExportPhase.Idle)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ExportUiState())
 
+    init {
+        // Opening the screen again shows the settings, not a finished/failed
+        // old result (a running export is kept and shown).
+        if (manager.state.value.phase !is ExportPhase.Running) manager.reset()
+    }
+
     fun setResolution(value: Int) = settings.update { it.copy(resolution = value) }
 
     fun setFrameRate(value: Int) = settings.update { it.copy(frameRate = value) }

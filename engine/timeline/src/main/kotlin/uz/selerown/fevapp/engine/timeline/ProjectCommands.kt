@@ -10,10 +10,12 @@ import uz.selerown.fevapp.core.model.Project
 class SetCanvasCommand(
     private val canvas: CanvasFormat,
     private val backgroundColor: Int? = null,
+    private val backgroundBlur: Boolean? = null,
 ) : TimelineCommand {
     override fun apply(project: Project): Project {
         val color = backgroundColor ?: project.backgroundColor
-        if (project.canvas == canvas && project.backgroundColor == color) return project
-        return project.copy(canvas = canvas, backgroundColor = color)
+        val blur = backgroundBlur ?: project.backgroundBlur
+        if (project.canvas == canvas && project.backgroundColor == color && project.backgroundBlur == blur) return project
+        return project.copy(canvas = canvas, backgroundColor = color, backgroundBlur = blur)
     }
 }

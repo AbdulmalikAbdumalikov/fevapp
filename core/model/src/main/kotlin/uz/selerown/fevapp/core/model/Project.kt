@@ -18,6 +18,8 @@ data class Project(
     val canvas: CanvasFormat = CanvasFormat.ORIGINAL,
     /** ARGB color shown where a clip does not fill the frame (black = classic bars). */
     val backgroundColor: Int = 0xFF000000.toInt(),
+    /** Fill the bars with a blurred, stretched copy of the clip instead of [backgroundColor]. */
+    val backgroundBlur: Boolean = false,
     /** Free-positioned clips on the text lane (may overlap). */
     val textClips: List<TextClip> = emptyList(),
     /** Free-positioned clips on the audio lane (music, extracted audio; may overlap). */

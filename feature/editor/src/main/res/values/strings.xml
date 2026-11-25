@@ -60,6 +60,7 @@
     <string name="sheet_apply">Qoʻllash</string>
     <string name="sheet_coming_soon">Bu vosita keyingi yangilanishda qoʻshiladi. Fevapp doim bepul boʻlib qoladi.</string>
     <string name="format_original">Asl</string>
+    <string name="format_blur">Xira fon (klipning oʻzidan)</string>
     <string name="format_background">Fon rangi (klip kadrni toʻldirmagan joylar)</string>
 
     <!-- Text sheet -->

@@ -35,7 +35,7 @@ internal fun ToolSheet(
     project: Project?,
     selection: Selection?,
     onDismiss: () -> Unit,
-    onApplyFormat: (CanvasFormat, Int) -> Unit,
+    onApplyFormat: (CanvasFormat, Int, Boolean) -> Unit,
     onSaveText: (editingId: String?, text: String, style: TextStyle) -> Unit,
     onPickMusic: () -> Unit,
     onPickVideoSound: () -> Unit,
@@ -75,7 +75,7 @@ internal fun ToolSheet(
         EditorTool.AUDIO_MIX -> project?.audioClips?.firstOrNull { it.id == selectedId }?.let { clip ->
             AudioMixSheet(clip, onDismiss, onSetAudioMix)
         } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)
-        else -> GenericSheet(tool, project?.canvas, project?.backgroundColor, onDismiss, onApplyFormat)
+        else -> GenericSheet(tool, project?.canvas, project?.backgroundColor, project?.backgroundBlur == true, onDismiss, onApplyFormat)
     }
 }
 
@@ -86,9 +86,11 @@ private fun GenericSheet(
     tool: EditorTool,
     currentFormat: CanvasFormat?,
     currentBackground: Int?,
+    currentBlur: Boolean,
     onDismiss: () -> Unit,
-    onApplyFormat: (CanvasFormat, Int) -> Unit,
+    onApplyFormat: (CanvasFormat, Int, Boolean) -> Unit,
 ) {
+    var blur by remember { mutableStateOf(currentBlur) }
     var format by remember { mutableStateOf(currentFormat ?: CanvasFormat.ORIGINAL) }
     var background by remember { mutableStateOf(currentBackground ?: PURE_BLACK) }
     FevToolSheet(
@@ -96,7 +98,7 @@ private fun GenericSheet(
         closeLabel = stringResource(R.string.sheet_close),
         applyLabel = stringResource(R.string.sheet_apply),
         onDismiss = onDismiss,
-        onApply = { if (tool == EditorTool.FORMAT) onApplyFormat(format, background) else onDismiss() },
+        onApply = { if (tool == EditorTool.FORMAT) onApplyFormat(format, background, blur) else onDismiss() },
     ) {
         when (tool) {
             EditorTool.FORMAT -> Column {
@@ -109,10 +111,14 @@ private fun GenericSheet(
                     }
                 }
                 SheetSection(R.string.format_background)
+                ChoiceChip(stringResource(R.string.format_blur), blur) { blur = !blur }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Pure black first (classic bars), then the content colors.
                     (listOf(PURE_BLACK to R.string.color_black) + ContentPalette.filterIndexed { i, _ -> i != 1 }).forEach { (argb, name) ->
-                        ColorSwatch(argb, stringResource(name), selected = background == argb) { background = argb }
+                        ColorSwatch(argb, stringResource(name), selected = !blur && background == argb) {
+                            background = argb
+                            blur = false
+                        }
                     }
                 }
             }

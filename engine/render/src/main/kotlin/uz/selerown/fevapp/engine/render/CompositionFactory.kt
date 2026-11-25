@@ -6,6 +6,7 @@ import androidx.media3.common.C
 import androidx.media3.common.Effect
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.FrameDropEffect
+import androidx.media3.effect.GaussianBlurWithFrameOverlaid
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
 import androidx.media3.effect.TextureOverlay
@@ -32,6 +33,21 @@ import uz.selerown.fevapp.core.model.TextClip
 internal object CompositionFactory {
 
     private const val BLACK = 0xFF000000.toInt()
+    private const val BLUR_SIGMA = 30f
+
+    /** Size of [clip] fitted into the frame, in pixels. */
+    private fun fitSize(clip: Clip, size: OutputSize): Pair<Float, Float> {
+        val w = clip.source.width.coerceAtLeast(1).toFloat()
+        val h = clip.source.height.coerceAtLeast(1).toFloat()
+        val scale = minOf(size.width / w, size.height / h)
+        return w * scale to h * scale
+    }
+
+    private fun fillsFrame(clip: Clip, size: OutputSize): Boolean {
+        if (clip.source.width <= 0 || clip.source.height <= 0) return true
+        val (w, h) = fitSize(clip, size)
+        return size.width - w <= 2f && size.height - h <= 2f
+    }
 
     fun create(project: Project, settings: ExportSettings): Composition {
         val size = OutputSizeCalculator.calculate(project, settings)
@@ -39,7 +55,7 @@ internal object CompositionFactory {
         var startUs = 0L
         val clips = project.mainTrack.clips
         val items = clips.mapIndexed { index, clip ->
-            mainItem(clips, index, startUs, texts, project.backgroundColor, size, settings).also { startUs += clip.durationUs }
+            mainItem(clips, index, startUs, texts, project.backgroundColor, project.backgroundBlur, size, settings).also { startUs += clip.durationUs }
         }
         val main = EditedMediaItemSequence.Builder(items)
             // Photos have no sound: fill silence so the output always has audio.
@@ -61,6 +77,7 @@ internal object CompositionFactory {
         startUs: Long,
         texts: List<TextClip>,
         backgroundColor: Int,
+        backgroundBlur: Boolean,
         size: OutputSize,
         settings: ExportSettings,
     ): EditedMediaItem {
@@ -68,13 +85,26 @@ internal object CompositionFactory {
         val endUs = startUs + clip.durationUs
         val videoEffects = mutableListOf<Effect>()
         videoEffects += ClipEffects.color(clips, index, startUs) // before the overlay, so text keeps its colors
+        val blurBars = backgroundBlur && !fillsFrame(clip, size)
+        videoEffects += if (blurBars) {
+            // Stretch to the frame, blur it, and put the sharp picture back on top at its
+            // real shape (scaling the stretched frame by fit/frame undoes the stretch).
+            val (fitW, fitH) = fitSize(clip, size)
+            listOf(
+                Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_STRETCH_TO_FIT),
+                GaussianBlurWithFrameOverlaid(BLUR_SIGMA, 2f, fitW / size.width, fitH / size.height),
+                // The blur pass changes the frame size (seen on API 36): force it back.
+                Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_STRETCH_TO_FIT),
+            )
+        } else {
+            listOf(Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_SCALE_TO_FIT))
+        }
         videoEffects += listOf(
-            Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_SCALE_TO_FIT),
             FrameDropEffect.createDefaultFrameDropEffect(settings.frameRate.toFloat()),
         )
         val overlays = mutableListOf<TextureOverlay>()
         // Colored background: paint the letterbox bars (overlays draw on top, so only the bars).
-        if (backgroundColor != BLACK) {
+        if (!blurBars && backgroundColor != BLACK) {
             BackgroundBars.create(clip, size, backgroundColor)?.let { overlays += it }
         }
         val visibleTexts = texts.filter { it.startUs < endUs && it.endUs > startUs }

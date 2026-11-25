@@ -10,6 +10,17 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import uz.selerown.fevapp.engine.timeline.TimelineRules
+import uz.selerown.fevapp.core.model.MediaType
+import coil3.video.videoFrameMicros
+import coil3.request.ImageRequest
+import coil3.compose.AsyncImage
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import uz.selerown.fevapp.core.model.OverlayClip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.gestures.calculateZoom
@@ -99,6 +110,7 @@ internal fun PreviewArea(
                 .size(frameWidth, frameHeight)
                 .background(Color(project.backgroundColor)), // video content color, not a UI color
         ) {
+        if (project.backgroundBlur) BlurredBackground(project, positionUs)
         // No clips: no player view (otherwise its last frame would stay on screen).
         if (project.mainTrack.clips.isNotEmpty()) AndroidView(
             factory = { ctx ->
@@ -369,4 +381,34 @@ private fun hitTest(project: Project, timeUs: Long, px: Float, py: Float, w: Flo
         it.isVisibleAt(timeUs) && TextRenderer.bounds(it, w.toInt(), h.toInt()).contains(px, py)
     }?.let { return Selection(Lane.TEXT, it.id) }
     return null
+}
+
+/**
+ * Preview approximation of the blurred background: one frame of the clip under
+ * the playhead (refreshed every second), stretched and blurred behind the
+ * picture. The export blurs every frame. Blur needs Android 12+; older
+ * devices show the frame dimmed instead.
+ */
+@Composable
+private fun BlurredBackground(project: Project, position: () -> Long) {
+    val context = LocalContext.current
+    val second by remember(project) { derivedStateOf { position() / 1_000_000 } }
+    val at = TimelineRules.clipAt(project.mainTrack, second * 1_000_000) ?: return
+    val frameUs = at.clip.sourceTimeAt(at.offsetUs)
+    val request = remember(at.clip.source.uri, frameUs) {
+        ImageRequest.Builder(context)
+            .data(at.clip.source.uri)
+            .size(240)
+            .apply { if (at.clip.source.type == MediaType.VIDEO) videoFrameMicros(frameUs) }
+            .build()
+    }
+    AsyncImage(
+        model = request,
+        contentDescription = null,
+        contentScale = ContentScale.FillBounds,
+        modifier = Modifier
+            .fillMaxSize()
+            .blur(28.dp, BlurredEdgeTreatment.Rectangle)
+            .alpha(0.85f),
+    )
 }
