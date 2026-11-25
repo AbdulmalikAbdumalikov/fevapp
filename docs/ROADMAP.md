@@ -33,7 +33,7 @@ Fevapp stays **free and offline** in every phase.
 - Masks
 - Chroma key (green screen)
 - ✅ Canvas background color + preview letterboxing
-- ⬜ Blurred background
+- ✅ Blurred background (export: every frame; preview: a blurred frame of the current clip)
 - Stickers (original, bundled)
 - Reverse clip
 
