@@ -151,6 +151,7 @@ class EditorViewModel @Inject constructor(
         when (tool) {
             EditorTool.EDIT -> selectClipAtPlayhead()
             EditorTool.OVERLAY -> viewModelScope.launch { _events.send(EditorEvent.PickOverlay) }
+            EditorTool.ADD_MEDIA -> viewModelScope.launch { _events.send(EditorEvent.PickMediaAtPlayhead) }
             EditorTool.SPEED -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_SPEED)
             EditorTool.FILTER -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_FILTER)
             EditorTool.SPLIT -> split(selection)
@@ -537,14 +538,23 @@ class EditorViewModel @Inject constructor(
 
     // ---- Media ----------------------------------------------------------
 
-    fun addClips(uris: List<Uri>) {
+    /** Adds picked media at the end, or at the playhead when [atPlayhead]. */
+    fun addClips(uris: List<Uri>, atPlayhead: Boolean = false) {
         if (uris.isEmpty()) return
+        val index = if (atPlayhead) insertIndexAtPlayhead() else null
         viewModelScope.launch {
             _state.update { it.copy(importing = true) }
             val clips = importer.import(uris)
             _state.update { it.copy(importing = false) }
-            if (clips.isEmpty()) message(R.string.msg_import_failed) else execute(AddClipsCommand(clips))
+            if (clips.isEmpty()) message(R.string.msg_import_failed) else execute(AddClipsCommand(clips, index))
         }
+    }
+
+    /** Before the clip under the playhead if in its first half, otherwise after it. */
+    private fun insertIndexAtPlayhead(): Int? {
+        val track = current?.mainTrack ?: return null
+        val at = TimelineRules.clipAt(track, positionUs.value) ?: return null
+        return if (at.offsetUs < at.clip.durationUs / 2) at.index else at.index + 1
     }
 
     fun export() {

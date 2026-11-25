@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,8 +23,9 @@ import uz.selerown.fevapp.core.designsystem.theme.FevDimens
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 
 /**
- * Bottom-toolbar tool: icon ABOVE a text label (never icon-only), at least
- * 68x60dp so it is easy to hit for every age.
+ * Bottom-toolbar tool: icon ABOVE a text label (never icon-only). Fixed
+ * 72 dp wide (long labels wrap to two small lines instead of widening the
+ * button) and at least 56 dp tall — still well above the 48 dp target.
  */
 @Composable
 fun FevToolButton(
@@ -42,19 +44,20 @@ fun FevToolButton(
     }
     Column(
         modifier = modifier
-            .sizeIn(minWidth = 68.dp, minHeight = 60.dp)
+            .width(72.dp)
+            .sizeIn(minHeight = 56.dp)
             .clip(FevDimens.SmallShape)
             .selectable(selected = selected, enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 6.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = tint,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )

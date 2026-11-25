@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -36,6 +37,7 @@ enum class EditorTool(
     val opensSheet: Boolean,
 ) {
     // Nothing selected
+    ADD_MEDIA(R.string.tool_add_media, Icons.Rounded.AddPhotoAlternate, false),
     EDIT(R.string.tool_edit, Icons.Rounded.ContentCut, false),
     AUDIO(R.string.tool_audio, Icons.Rounded.MusicNote, true),
     TEXT(R.string.tool_text, Icons.Rounded.TextFields, true),
@@ -71,7 +73,7 @@ enum class EditorTool(
     ;
 
     companion object {
-        val mainTools = listOf(EDIT, AUDIO, TEXT, OVERLAY, FILTER, SPEED, CAPTIONS, FORMAT)
+        val mainTools = listOf(ADD_MEDIA, EDIT, AUDIO, TEXT, OVERLAY, FILTER, SPEED, CAPTIONS, FORMAT)
 
         /** Move left/right are the visible alternative to long-press dragging. */
         val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)

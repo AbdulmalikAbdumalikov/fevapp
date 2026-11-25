@@ -57,4 +57,7 @@ sealed interface EditorEvent {
 
     /** Ask the screen to open the Photo Picker for a picture-in-picture clip. */
     data object PickOverlay : EditorEvent
+
+    /** Ask the screen to open the Photo Picker; picked clips go in at the playhead. */
+    data object PickMediaAtPlayhead : EditorEvent
 }

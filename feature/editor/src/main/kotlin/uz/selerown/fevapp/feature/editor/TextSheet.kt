@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -186,7 +187,7 @@ internal fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
             selectedContainerColor = FevTheme.colors.accent,
             selectedLabelColor = FevTheme.colors.onAccent,
         ),
-        modifier = Modifier.height(FevDimens.MinTouch),
+        // Visual 32 dp; Material still gives it a 48 dp touch target.
     )
 }
 
@@ -195,7 +196,8 @@ internal fun ColorSwatch(argb: Int, name: String, selected: Boolean, onClick: ()
     val c = FevTheme.colors
     Box(
         Modifier
-            .size(FevDimens.MinTouch)
+            .minimumInteractiveComponentSize() // 48 dp touch target
+            .size(40.dp)
             .clip(CircleShape)
             .border(if (selected) 3.dp else 1.dp, if (selected) c.accent else c.border, CircleShape)
             .clickable(role = Role.RadioButton, onClick = onClick)

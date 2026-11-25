@@ -70,7 +70,7 @@ internal fun LaneItem(
     fill: Color,
     xOfUs: (Long) -> Float,
     pxPerUs: Float,
-    viewportWidthPx: Float,
+    visibleRange: ClosedFloatingPointRange<Float>,
     selected: Boolean,
     draftStartUs: Long?,
     draftEndUs: Long?,
@@ -86,7 +86,7 @@ internal fun LaneItem(
     val endUs = draftEndUs ?: model.endUs
     val xPx = xOfUs(startUs)
     val widthPx = ((endUs - startUs) * pxPerUs).coerceAtLeast(2f)
-    if (xPx > viewportWidthPx + 200f || xPx + widthPx < -200f) return
+    if (xPx > visibleRange.endInclusive || xPx + widthPx < visibleRange.start) return
 
     val current by rememberUpdatedState(model)
     val scale by rememberUpdatedState(pxPerUs)
@@ -126,7 +126,7 @@ internal fun LaneItem(
             // A left trim moves the source window; a move keeps it.
             val moved = endUs - startUs == model.endUs - model.startUs
             val sourceStart = model.sourceStartUs + if (moved) 0L else startUs - model.startUs
-            WaveformBars(waveform, sourceStart, pxPerUs, visibleFromPx = -xPx, visibleToPx = viewportWidthPx - xPx, c.textPrimary.copy(alpha = 0.35f))
+            WaveformBars(waveform, sourceStart, pxPerUs, visibleFromPx = visibleRange.start - xPx, visibleToPx = visibleRange.endInclusive - xPx, c.textPrimary.copy(alpha = 0.35f))
         }
         Row(
             Modifier
@@ -137,7 +137,7 @@ internal fun LaneItem(
             Icon(icon, contentDescription = null, tint = c.textPrimary, modifier = Modifier.size(16.dp))
             Text(
                 model.label,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = c.textPrimary,
                 maxLines = 1,
                 softWrap = false,

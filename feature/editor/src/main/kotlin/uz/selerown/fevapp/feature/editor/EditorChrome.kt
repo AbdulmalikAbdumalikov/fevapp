@@ -75,7 +75,7 @@ internal fun EditorTopBar(
 /** Current/total time, play-pause, zoom buttons (alternative to pinch) and fullscreen. */
 @Composable
 internal fun PlaybackBar(
-    positionUs: Long,
+    positionUs: () -> Long,
     durationUs: Long,
     isPlaying: Boolean,
     onTogglePlay: () -> Unit,
@@ -86,7 +86,7 @@ internal fun PlaybackBar(
     val c = FevTheme.colors
     Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
         Text(
-            stringResource(R.string.editor_time, TimeFormat.clock(positionUs), TimeFormat.clock(durationUs)),
+            stringResource(R.string.editor_time, TimeFormat.clock(positionUs()), TimeFormat.clock(durationUs)),
             style = MaterialTheme.typography.labelLarge,
             color = c.textPrimary,
             modifier = Modifier.align(Alignment.CenterStart),
@@ -106,7 +106,7 @@ internal fun PlayButton(isPlaying: Boolean, onClick: () -> Unit, modifier: Modif
     val label = stringResource(if (isPlaying) R.string.editor_pause else R.string.editor_play)
     Box(
         modifier
-            .size(52.dp)
+            .size(48.dp)
             .clip(CircleShape)
             .background(c.surfaceHigh)
             .clickable(role = Role.Button, onClick = onClick)
@@ -117,7 +117,7 @@ internal fun PlayButton(isPlaying: Boolean, onClick: () -> Unit, modifier: Modif
             if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
             contentDescription = null,
             tint = c.textPrimary,
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(28.dp),
         )
     }
 }

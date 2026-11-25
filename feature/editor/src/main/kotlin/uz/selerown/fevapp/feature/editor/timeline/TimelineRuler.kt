@@ -17,13 +17,17 @@ private val STEPS_US = longArrayOf(
     500_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000, 30_000_000, 60_000_000, 300_000_000,
 )
 
-/** Time ruler drawn relative to the fixed center playhead. */
+/**
+ * Time ruler drawn relative to the fixed center playhead. The position is
+ * read inside the draw phase, so scrolling only redraws this canvas.
+ */
 @Composable
-internal fun TimelineRuler(positionUs: Long, pxPerUs: Float, modifier: Modifier = Modifier) {
+internal fun TimelineRuler(position: () -> Long, pxPerUs: Float, modifier: Modifier = Modifier) {
     val measurer = rememberTextMeasurer()
     val c = FevTheme.colors
     val style = MaterialTheme.typography.labelSmall.copy(color = c.textSecondary)
     Canvas(modifier) {
+        val positionUs = position()
         val center = size.width / 2f
         val minGapPx = 72.dp.toPx()
         val step = STEPS_US.firstOrNull { it * pxPerUs >= minGapPx } ?: STEPS_US.last()

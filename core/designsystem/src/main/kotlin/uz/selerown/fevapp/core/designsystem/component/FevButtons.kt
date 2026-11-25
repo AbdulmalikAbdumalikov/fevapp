@@ -32,7 +32,7 @@ fun FevPrimaryButton(
         enabled = enabled,
         shape = FevDimens.ButtonShape,
         colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = c.onAccent),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         modifier = modifier.defaultMinSize(minHeight = FevDimens.MinTouch),
     ) { Text(text) }
 }

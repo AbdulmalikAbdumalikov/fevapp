@@ -41,7 +41,10 @@ internal fun EditorScreen(
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val positionUs by viewModel.positionUs.collectAsStateWithLifecycle()
+    // Read the playhead only where it is drawn (time label, preview layers,
+    // timeline) instead of here, so the whole screen does not recompose 30x/s.
+    val positionState = viewModel.positionUs.collectAsStateWithLifecycle()
+    val positionUs = { positionState.value }
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val colorMatrix by viewModel.preview.colorMatrix.collectAsStateWithLifecycle()
     val waveforms by viewModel.waveforms.collectAsStateWithLifecycle()
@@ -51,6 +54,9 @@ internal fun EditorScreen(
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var pxPerSecond by rememberSaveable { mutableFloatStateOf(TimelineZoom.DEFAULT_DP_PER_SECOND) }
 
+    val insertPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
+        viewModel.addClips(uris, atPlayhead = true)
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         viewModel.addClips(uris)
     }
@@ -86,6 +92,8 @@ internal fun EditorScreen(
                 is EditorEvent.Message -> snackbar.showSnackbar(context.getString(event.text))
                 is EditorEvent.OpenExport -> onExport(event.projectId)
                 EditorEvent.Close -> onBack()
+                EditorEvent.PickMediaAtPlayhead ->
+                    insertPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                 EditorEvent.PickOverlay ->
                     overlayPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
             }

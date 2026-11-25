@@ -26,6 +26,7 @@
     <string name="editor_empty">Klip yoʻq. Qoʻshish uchun “+” ni bosing.</string>
 
     <!-- Tools: nothing selected -->
+    <string name="tool_add_media">Qoʻshish</string>
     <string name="tool_edit">Kesish</string>
     <string name="tool_audio">Audio</string>
     <string name="tool_text">Matn</string>

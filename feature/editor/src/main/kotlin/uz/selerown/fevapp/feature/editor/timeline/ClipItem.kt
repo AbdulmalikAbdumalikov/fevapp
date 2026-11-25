@@ -60,7 +60,7 @@ internal fun ClipItem(
     clip: Clip,
     baseXPx: Float,
     pxPerUs: Float,
-    viewportWidthPx: Float,
+    visibleRange: ClosedFloatingPointRange<Float>,
     selected: Boolean,
     draft: TrimDraft?,
     dragOffsetPx: Float,
@@ -80,7 +80,7 @@ internal fun ClipItem(
     val widthPx = ((trimEnd - trimStart) / clip.speed * pxPerUs).coerceAtLeast(2f)
 
     // Skip clips that are completely off screen.
-    if (xPx > viewportWidthPx + 200f || xPx + widthPx < -200f) return
+    if (xPx > visibleRange.endInclusive || xPx + widthPx < visibleRange.start) return
 
     val tap by rememberUpdatedState(onTap)
     val reorderStart by rememberUpdatedState(onReorderStart)

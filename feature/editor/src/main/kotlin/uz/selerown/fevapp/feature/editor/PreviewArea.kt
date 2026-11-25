@@ -59,7 +59,7 @@ import uz.selerown.fevapp.engine.render.TextRenderer
 internal fun PreviewArea(
     player: Player,
     project: Project,
-    positionUs: Long,
+    positionUs: () -> Long,
     colorMatrix: FloatArray?,
     selectedTextId: String?,
     textDraft: TextDraft?,
@@ -118,7 +118,7 @@ internal fun PreviewArea(
         )
         OverlayLayer(
             project = project,
-            positionUs = positionUs,
+            position = positionUs,
             players = overlayPlayers,
             selectedId = selectedOverlayId,
             draft = overlayDraft,
@@ -127,7 +127,7 @@ internal fun PreviewArea(
         )
         TextLayer(
             project = project,
-            positionUs = positionUs,
+            position = positionUs,
             selectedTextId = selectedTextId,
             draft = textDraft,
             onDrag = onTextDrag,
@@ -162,7 +162,7 @@ internal fun PreviewArea(
 @Composable
 private fun TextLayer(
     project: Project,
-    positionUs: Long,
+    position: () -> Long,
     selectedTextId: String?,
     draft: TextDraft?,
     onDrag: (String, Float, Float) -> Unit,
@@ -170,6 +170,7 @@ private fun TextLayer(
     onTap: () -> Unit,
     modifier: Modifier,
 ) {
+    val positionUs = position()
     val visible = project.textClips
         .filter { it.isVisibleAt(positionUs) }
         .map { clip ->
@@ -226,7 +227,7 @@ private fun TextLayer(
 @Composable
 private fun BoxScope.OverlayLayer(
     project: Project,
-    positionUs: Long,
+    position: () -> Long,
     players: Map<String, Player>,
     selectedId: String?,
     draft: TextDraft?,
@@ -235,6 +236,7 @@ private fun BoxScope.OverlayLayer(
 ) {
     val c = FevTheme.colors
     val density = LocalDensity.current
+    val positionUs = position()
     BoxWithConstraints(Modifier.matchParentSize()) {
         val frameW = constraints.maxWidth.toFloat()
         val frameH = constraints.maxHeight.toFloat()

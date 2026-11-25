@@ -45,6 +45,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,21 +74,26 @@ import uz.selerown.fevapp.feature.editor.TrimDraft
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private val RulerHeight = 22.dp
-private val MainTrackHeight = 64.dp
-private val LaneHeight = 48.dp // one row = minimum touch target
+private val RulerHeight = 20.dp
+private val MainTrackHeight = 56.dp
+private val LaneHeight = 44.dp
 
-/** A lane grows up to this many 48 dp rows; beyond that rows share the space. */
+/** A lane grows up to this many rows; beyond that rows share the space. */
 private const val MAX_LANE_ROWS = 3
 
 /**
  * CapCut-style timeline: the playhead is FIXED in the center and the content
  * scrolls under it. Dragging/flinging the background scrubs, two fingers zoom.
+ *
+ * Performance: items are laid out once in CONTENT coordinates (time × px)
+ * and the whole layer is moved with graphicsLayer.translationX, so playback
+ * (30 position updates/s) only redraws — it does not recompose. Off-screen
+ * items are skipped using a window that changes every half screen.
  */
 @Composable
 internal fun TimelineView(
     project: Project,
-    positionUs: Long,
+    positionUs: () -> Long,
     selection: Selection?,
     trimDraft: TrimDraft?,
     laneDraft: LaneDraft?,
@@ -112,7 +119,6 @@ internal fun TimelineView(
     val density = LocalDensity.current
     val pxPerUs = with(density) { dpPerSecond.dp.toPx() } / 1_000_000f
 
-    val latestPosition by rememberUpdatedState(positionUs)
     val latestPxPerUs by rememberUpdatedState(pxPerUs)
     val latestDuration by rememberUpdatedState(project.durationUs)
     val zoom by rememberUpdatedState(onZoom)
@@ -144,7 +150,7 @@ internal fun TimelineView(
                     flingJob?.cancel()
                     val tracker = VelocityTracker()
                     tracker.addPosition(down.uptimeMillis, down.position)
-                    var time = latestPosition.toFloat()
+                    var time = positionUs().toFloat()
                     var panning = false
                     var zooming = false
                     var childOwnsGesture = false
@@ -200,12 +206,22 @@ internal fun TimelineView(
     ) {
         val widthPx = constraints.maxWidth.toFloat()
         val centerPx = widthPx / 2f
-        val xOf = { timeUs: Long -> centerPx + (timeUs - positionUs) * pxPerUs }
+        // Content coordinates: x = time × px (the layer below is translated).
+        val xOf = { timeUs: Long -> timeUs * pxPerUs }
         val clips = project.mainTrack.clips
+        // Changes only every half screen of scrolling -> few recompositions.
+        val windowIndex by remember(pxPerUs, widthPx) {
+            derivedStateOf { (positionUs() * pxPerUs / centerPx).toInt() }
+        }
+        val visible = (windowIndex - 3) * centerPx..(windowIndex + 3) * centerPx
 
-        Column(Modifier.fillMaxWidth()) {
-            TimelineRuler(positionUs, pxPerUs, Modifier.fillMaxWidth().height(RulerHeight))
-            Spacer(Modifier.height(4.dp))
+        TimelineRuler(positionUs, pxPerUs, Modifier.fillMaxWidth().height(RulerHeight))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = RulerHeight + 4.dp)
+                .graphicsLayer { translationX = centerPx - positionUs() * pxPerUs },
+        ) {
 
             // Main video track
             Box(Modifier.fillMaxWidth().height(MainTrackHeight)) {
@@ -217,7 +233,7 @@ internal fun TimelineView(
                         clip = clip,
                         baseXPx = xOf(clipStart),
                         pxPerUs = pxPerUs,
-                        viewportWidthPx = widthPx,
+                        visibleRange = visible,
                         selected = clip.id == selectedClipId,
                         draft = trimDraft?.takeIf { it.clipId == clip.id },
                         dragOffsetPx = if (draggingClipId == clip.id) dragOffsetPx else 0f,
@@ -266,7 +282,7 @@ internal fun TimelineView(
                 addLabel = stringResource(R.string.editor_add_overlay),
                 xOf = xOf,
                 pxPerUs = pxPerUs,
-                viewportWidthPx = widthPx,
+                visibleRange = visible,
                 selection = selection,
                 draft = laneDraft,
                 onAdd = onAddOverlay,
@@ -292,7 +308,7 @@ internal fun TimelineView(
                 addLabel = stringResource(R.string.editor_add_text),
                 xOf = xOf,
                 pxPerUs = pxPerUs,
-                viewportWidthPx = widthPx,
+                visibleRange = visible,
                 selection = selection,
                 draft = laneDraft,
                 onAdd = onAddText,
@@ -321,7 +337,7 @@ internal fun TimelineView(
                 addLabel = stringResource(R.string.editor_add_audio),
                 xOf = xOf,
                 pxPerUs = pxPerUs,
-                viewportWidthPx = widthPx,
+                visibleRange = visible,
                 selection = selection,
                 draft = laneDraft,
                 onAdd = onAddAudio,
@@ -331,6 +347,14 @@ internal fun TimelineView(
                 onDragEnd = onLaneDragEnd,
             )
         }
+
+        // Always-visible "+" at the right edge of the main track (adds at the end).
+        FixedAddButton(
+            onClick = onAddClip,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = RulerHeight + 4.dp + (MainTrackHeight - 48.dp) / 2, end = 8.dp),
+        )
 
         // Fixed center playhead
         Box(
@@ -353,6 +377,24 @@ private fun reorderTarget(project: Project, index: Int, offsetUs: Float): Int {
         if (j != index && track.startOf(j) + other.durationUs / 2 < draggedCenter) target++
     }
     return target
+}
+
+@Composable
+private fun FixedAddButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val c = FevTheme.colors
+    val label = stringResource(R.string.editor_add_clip)
+    Box(
+        modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(c.surfaceHigh)
+            .border(1.dp, c.accent, RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(Icons.Rounded.Add, contentDescription = null, tint = c.accent)
+    }
 }
 
 @Composable
@@ -388,7 +430,7 @@ private fun LaneRow(
     addLabel: String,
     xOf: (Long) -> Float,
     pxPerUs: Float,
-    viewportWidthPx: Float,
+    visibleRange: ClosedFloatingPointRange<Float>,
     selection: Selection?,
     draft: LaneDraft?,
     onAdd: () -> Unit,
@@ -419,7 +461,7 @@ private fun LaneRow(
                 fill = fill,
                 xOfUs = xOf,
                 pxPerUs = pxPerUs,
-                viewportWidthPx = viewportWidthPx,
+                visibleRange = visibleRange,
                 selected = selection == itemSelection,
                 draftStartUs = itemDraft?.startUs,
                 draftEndUs = itemDraft?.endUs,
