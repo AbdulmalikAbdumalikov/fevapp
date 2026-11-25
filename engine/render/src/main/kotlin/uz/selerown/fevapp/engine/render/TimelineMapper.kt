@@ -44,12 +44,13 @@ object TimelineMapper {
         var start = 0L
         clips.forEachIndexed { index, clip ->
             val end = start + clip.durationUs
-            if (timeUs < end) return index to ((timeUs - start).coerceAtLeast(0) / 1000)
+            // Player positions are in SOURCE time: scale by speed.
+            if (timeUs < end) return index to (((timeUs - start).coerceAtLeast(0) * clip.speed).toLong() / 1000)
             start = end
         }
         // Past the end: park on the last frame.
         val last = clips.lastIndex.coerceAtLeast(0)
-        return last to ((clips.lastOrNull()?.durationUs ?: 0L) / 1000)
+        return last to ((clips.lastOrNull()?.sourceLengthUs ?: 0L) / 1000)
     }
 
     /** (playlist index, position ms) -> timeline time. */
@@ -57,6 +58,6 @@ object TimelineMapper {
         if (clips.isEmpty()) return 0L
         val i = index.coerceIn(0, clips.lastIndex)
         val start = clips.take(i).sumOf { it.durationUs }
-        return (start + positionMs * 1000).coerceAtMost(start + clips[i].durationUs)
+        return (start + (positionMs * 1000 / clips[i].speed).toLong()).coerceAtMost(start + clips[i].durationUs)
     }
 }

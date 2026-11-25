@@ -2,6 +2,7 @@ package uz.selerown.fevapp.engine.render
 
 import android.content.Context
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,19 @@ import kotlin.math.abs
 class PreviewPlayer(private val context: Context) {
 
     val player: ExoPlayer = ExoPlayer.Builder(context).build()
+
+    /**
+     * Color matrix (android.graphics.ColorMatrix layout) of the clip being
+     * shown, or null for unchanged colors. The UI applies it as a color filter
+     * on the video TextureView — cheaper and more robust than GL effects.
+     */
+    private val _colorMatrix = MutableStateFlow<FloatArray?>(null)
+    val colorMatrix: StateFlow<FloatArray?> = _colorMatrix.asStateFlow()
+
+    /** True while recording a voice-over: the preview must not be heard by the mic. */
+    var muted: Boolean = false
+
+    private var appliedClipStyle: Any? = null
 
     private var clips: List<Clip> = emptyList()
     private var durationUs: Long = 0L
@@ -65,7 +79,8 @@ class PreviewPlayer(private val context: Context) {
         val (index, posMs) = TimelineMapper.locate(newClips, clamped)
         player.setMediaItems(newClips.map(TimelineMapper::toMediaItem), index, posMs)
         player.prepare()
-        applyClipVolume()
+        appliedClipStyle = null
+        applyClipStyle()
     }
 
     fun play() {
@@ -96,7 +111,7 @@ class PreviewPlayer(private val context: Context) {
         if (player.isPlaying) {
             _positionUs.value = TimelineMapper.toTimelineUs(clips, player.currentMediaItemIndex, player.currentPosition)
         }
-        applyClipVolume()
+        applyClipStyle()
         syncLanes()
     }
 
@@ -106,10 +121,27 @@ class PreviewPlayer(private val context: Context) {
         lanePlayers.clear()
     }
 
-    // ---- Main-track volume ----------------------------------------------
+    // ---- Per-clip volume, speed and filter -------------------------------
 
-    private fun applyClipVolume() {
-        player.volume = clips.getOrNull(player.currentMediaItemIndex)?.volume ?: 1f
+    /**
+     * Shows [clip]'s speed/filter instead of the real one (live filter preview
+     * in the tool sheet). Null goes back to the project's values.
+     */
+    fun previewClipStyle(clip: Clip?) {
+        styleOverride = clip
+        applyClipStyle()
+    }
+
+    private var styleOverride: Clip? = null
+
+    private fun applyClipStyle() {
+        val clip = styleOverride ?: clips.getOrNull(player.currentMediaItemIndex)
+        player.volume = if (muted) 0f else clip?.volume ?: 1f
+        val style = clip?.let { Triple(it.speed, it.look, it.color) }
+        if (style == appliedClipStyle) return
+        appliedClipStyle = style
+        player.playbackParameters = PlaybackParameters(clip?.speed ?: 1f)
+        _colorMatrix.value = clip?.let(ColorMath::matrixFor)?.let(ColorMath::toAndroidColorMatrix)
     }
 
     // ---- Audio lane -------------------------------------------------------
@@ -163,7 +195,7 @@ class PreviewPlayer(private val context: Context) {
             } else if (exo.isPlaying && abs(exo.currentPosition - targetMs) > MAX_DRIFT_MS) {
                 exo.seekTo(targetMs)
             }
-            exo.volume = clip.gainAt(offsetUs)
+            exo.volume = if (muted) 0f else clip.gainAt(offsetUs)
         }
     }
 

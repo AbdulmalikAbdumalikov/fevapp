@@ -52,7 +52,9 @@ internal object CompositionFactory {
         settings: ExportSettings,
     ): EditedMediaItem {
         val endUs = startUs + clip.durationUs
-        val videoEffects = mutableListOf<Effect>(
+        val videoEffects = mutableListOf<Effect>()
+        videoEffects += ClipEffects.color(clip) // before the overlay, so text keeps its colors
+        videoEffects += listOf(
             Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_SCALE_TO_FIT),
             FrameDropEffect.createDefaultFrameDropEffect(settings.frameRate.toFloat()),
         )
@@ -66,6 +68,7 @@ internal object CompositionFactory {
             .apply {
                 if (clip.source.type == MediaType.IMAGE) setFrameRate(settings.frameRate)
                 if (clip.volume == 0f) setRemoveAudio(true)
+                if (clip.speed != 1f) setSpeed(ClipEffects.speed(clip.speed))
             }
             .build()
     }
