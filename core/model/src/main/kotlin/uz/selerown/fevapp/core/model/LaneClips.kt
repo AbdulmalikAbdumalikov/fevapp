@@ -31,6 +31,8 @@ data class TextStyle(
     val bold: Boolean = true,
     /** Vertical center of the text: 0 = top, 1 = bottom. */
     val positionY: Float = 0.8f,
+    /** Horizontal center of the text: 0 = left, 1 = right. */
+    val positionX: Float = 0.5f,
     /** How the text appears and disappears. */
     val animation: TextAnimation = TextAnimation.NONE,
 ) {

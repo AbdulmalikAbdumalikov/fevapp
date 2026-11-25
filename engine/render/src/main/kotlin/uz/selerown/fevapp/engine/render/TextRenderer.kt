@@ -80,19 +80,26 @@ object TextRenderer {
             .setAlignment(Layout.Alignment.ALIGN_CENTER)
             .setIncludePad(false)
             .build()
-        val left = (width - layoutWidth) / 2f
+        val contentWidth = (0 until layout.lineCount).maxOf { layout.getLineWidth(it) }
+        // Horizontal center, kept so the text never leaves the frame.
+        val pad = paint.textSize * 0.3f
+        val halfWidth = contentWidth / 2f + if (style.background) pad else 0f
+        val centerX = if (halfWidth * 2 >= width) {
+            width / 2f
+        } else {
+            (style.positionX * width).coerceIn(halfWidth, width - halfWidth)
+        }
+        val left = (width - layoutWidth) / 2f + (centerX - width / 2f)
         val top = (style.positionY * height - layout.height / 2f)
             .coerceIn(0f, (height - layout.height).coerceAtLeast(0).toFloat()) + motion.shiftY * height
         canvas.save()
-        canvas.scale(motion.scale, motion.scale, width / 2f, top + layout.height / 2f)
+        canvas.scale(motion.scale, motion.scale, centerX, top + layout.height / 2f)
 
         if (style.background) {
-            val contentWidth = (0 until layout.lineCount).maxOf { layout.getLineWidth(it) }
-            val pad = paint.textSize * 0.3f
             val box = RectF(
-                width / 2f - contentWidth / 2f - pad,
+                centerX - contentWidth / 2f - pad,
                 top - pad / 2f,
-                width / 2f + contentWidth / 2f + pad,
+                centerX + contentWidth / 2f + pad,
                 top + layout.height + pad / 2f,
             )
             canvas.drawRoundRect(box, pad, pad, boxPaint)

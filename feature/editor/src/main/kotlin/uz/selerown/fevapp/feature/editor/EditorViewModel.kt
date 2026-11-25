@@ -284,6 +284,19 @@ class EditorViewModel @Inject constructor(
         if (execute(AddTextCommand(clip))) select(Selection(Lane.TEXT, clip.id))
     }
 
+    /** Live drag of a text on the preview (x, y = center as 0..1 of the frame). */
+    fun onTextDrag(id: String, x: Float, y: Float) {
+        preview.pause()
+        _state.update { it.copy(textDraft = TextDraft(id, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))) }
+    }
+
+    fun onTextDragEnd() {
+        val draft = _state.value.textDraft ?: return
+        _state.update { it.copy(textDraft = null) }
+        val clip = current?.textClips?.firstOrNull { it.id == draft.id } ?: return
+        execute(UpdateTextCommand(clip.id, clip.text, clip.style.copy(positionX = draft.x, positionY = draft.y)))
+    }
+
     // ---- Audio ----------------------------------------------------------
 
     /** Adds a music file (or a video's sound) at the playhead. */

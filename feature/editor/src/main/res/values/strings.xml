@@ -72,7 +72,7 @@
     <string name="anim_fade">Asta paydo boʻlish</string>
     <string name="anim_pop">Kattalashib chiqish</string>
     <string name="anim_slide">Pastdan chiqish</string>
-    <string name="text_position">Joylashuv</string>
+    <string name="text_position">Joylashuv (yoki matnni videoda barmoq bilan suring)</string>
     <string name="position_top">Tepa</string>
     <string name="position_middle">Oʻrta</string>
     <string name="position_bottom">Past</string>

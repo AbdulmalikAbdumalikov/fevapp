@@ -21,7 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FullscreenExit
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +54,10 @@ internal fun PreviewArea(
     project: Project,
     positionUs: Long,
     colorMatrix: FloatArray?,
+    selectedTextId: String?,
+    textDraft: TextDraft?,
+    onTextDrag: (id: String, x: Float, y: Float) -> Unit,
+    onTextDragEnd: () -> Unit,
     isPlaying: Boolean,
     fullscreen: Boolean,
     onTogglePlay: () -> Unit,
@@ -95,7 +104,16 @@ internal fun PreviewArea(
                     onClick = onTogglePlay,
                 ),
         )
-        TextLayer(project, positionUs, Modifier.fillMaxSize())
+        TextLayer(
+            project = project,
+            positionUs = positionUs,
+            selectedTextId = selectedTextId,
+            draft = textDraft,
+            onDrag = onTextDrag,
+            onDragEnd = onTextDragEnd,
+            onTap = onTogglePlay,
+            modifier = Modifier.fillMaxSize(),
+        )
         }
         if (fullscreen) {
             PlayButton(isPlaying, onTogglePlay, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
@@ -121,16 +139,59 @@ internal fun PreviewArea(
  * export uses, inside a box with the project's frame shape.
  */
 @Composable
-private fun TextLayer(project: Project, positionUs: Long, modifier: Modifier) {
-    val visible = project.textClips.filter { it.isVisibleAt(positionUs) }
+private fun TextLayer(
+    project: Project,
+    positionUs: Long,
+    selectedTextId: String?,
+    draft: TextDraft?,
+    onDrag: (String, Float, Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onTap: () -> Unit,
+    modifier: Modifier,
+) {
+    val visible = project.textClips
+        .filter { it.isVisibleAt(positionUs) }
+        .map { clip ->
+            if (draft?.id == clip.id) clip.copy(style = clip.style.copy(positionX = draft.x, positionY = draft.y)) else clip
+        }
     if (visible.isEmpty()) return
+    // A selected, visible text can be dragged with a finger (buttons in its sheet do the same).
+    val draggable = visible.firstOrNull { it.id == selectedTextId }
+    val latest by rememberUpdatedState(draggable)
+    val drag by rememberUpdatedState(onDrag)
+    val dragEnd by rememberUpdatedState(onDragEnd)
+    val tap by rememberUpdatedState(onTap)
     val (rw, rh) = project.frameRatio()
     val ratio = rw.toFloat() / rh
     BoxWithConstraints(modifier) {
         val fitsWidth = ratio > maxWidth / maxHeight
         val width = if (fitsWidth) maxWidth else maxHeight * ratio
         val height = if (fitsWidth) maxWidth / ratio else maxHeight
-        Canvas(Modifier.align(Alignment.Center).size(width, height)) {
+        val gestures = if (draggable == null) {
+            Modifier
+        } else {
+            Modifier
+                .pointerInput(Unit) { detectTapGestures { tap() } }
+                .pointerInput(Unit) {
+                    var x = 0f
+                    var y = 0f
+                    detectDragGestures(
+                        onDragStart = {
+                            latest?.style?.let { x = it.positionX; y = it.positionY }
+                        },
+                        onDrag = { change, amount ->
+                            change.consume()
+                            val clip = latest ?: return@detectDragGestures
+                            x = (x + amount.x / size.width).coerceIn(0f, 1f)
+                            y = (y + amount.y / size.height).coerceIn(0f, 1f)
+                            drag(clip.id, x, y)
+                        },
+                        onDragEnd = { dragEnd() },
+                        onDragCancel = { dragEnd() },
+                    )
+                }
+        }
+        Canvas(Modifier.align(Alignment.Center).size(width, height).then(gestures)) {
             drawIntoCanvas { TextRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), visible, positionUs) }
         }
     }

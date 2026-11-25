@@ -32,6 +32,8 @@ data class EditorUiState(
     val canRedo: Boolean = false,
     val openTool: EditorTool? = null,
     val importing: Boolean = false,
+    /** Live position of a text being dragged on the preview (committed on release). */
+    val textDraft: TextDraft? = null,
     /** Set while a voice-over is being recorded. */
     val recording: Recording? = null,
 ) {
@@ -39,6 +41,9 @@ data class EditorUiState(
     val selectedClipId: String?
         get() = selection?.takeIf { it.lane == Lane.MAIN }?.id
 }
+
+/** Text being dragged on the preview: new center as fractions of the frame. */
+data class TextDraft(val id: String, val x: Float, val y: Float)
 
 /** A voice-over in progress: where it will be placed and when it started (wall clock). */
 data class Recording(val startUs: Long, val startedAtMillis: Long)
