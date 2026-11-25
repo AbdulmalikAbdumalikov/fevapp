@@ -29,6 +29,7 @@ import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
+import uz.selerown.fevapp.core.model.TransitionType
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -159,6 +160,63 @@ private fun AdjustSlider(@StringRes label: Int, value: Float, onChange: (Float) 
             onValueChange = { onChange((it * 100).roundToInt() / 100f) },
             valueRange = -1f..1f,
             colors = SliderDefaults.colors(thumbColor = c.accent, activeTrackColor = c.accent),
+        )
+    }
+}
+
+private val Transitions = listOf(
+    TransitionType.NONE to R.string.transition_none,
+    TransitionType.FADE_BLACK to R.string.transition_black,
+    TransitionType.FADE_WHITE to R.string.transition_white,
+)
+
+/** Transition from the selected clip into the next one. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun TransitionSheet(
+    clip: Clip,
+    onDismiss: () -> Unit,
+    onApply: (TransitionType, Long, applyToAll: Boolean) -> Unit,
+) {
+    val c = FevTheme.colors
+    var type by remember { mutableStateOf(clip.transition) }
+    var seconds by remember { mutableFloatStateOf(clip.transitionUs / 1_000_000f) }
+    var applyToAll by remember { mutableStateOf(false) }
+    FevToolSheet(
+        title = stringResource(R.string.tool_transition),
+        closeLabel = stringResource(R.string.sheet_close),
+        applyLabel = stringResource(R.string.sheet_apply),
+        onDismiss = onDismiss,
+        onApply = { onApply(type, (seconds * 1_000_000).toLong(), applyToAll) },
+    ) {
+        SheetSection(R.string.transition_type)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Transitions.forEach { (option, label) ->
+                ChoiceChip(stringResource(label), type == option) { type = option }
+            }
+        }
+        Row(Modifier.padding(top = 16.dp)) {
+            Text(
+                stringResource(R.string.transition_length),
+                style = MaterialTheme.typography.titleSmall,
+                color = c.textSecondary,
+                modifier = Modifier.weight(1f),
+            )
+            Text(stringResource(R.string.value_seconds, seconds), style = MaterialTheme.typography.titleSmall, color = c.textPrimary)
+        }
+        Slider(
+            value = seconds,
+            onValueChange = { seconds = (it * 10).roundToInt() / 10f },
+            valueRange = Clip.MIN_TRANSITION_US / 1_000_000f..Clip.MAX_TRANSITION_US / 1_000_000f,
+            enabled = type != TransitionType.NONE,
+            colors = SliderDefaults.colors(thumbColor = c.accent, activeTrackColor = c.accent),
+        )
+        ChoiceChip(stringResource(R.string.filter_apply_all), applyToAll) { applyToAll = !applyToAll }
+        Text(
+            stringResource(R.string.transition_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = c.textSecondary,
+            modifier = Modifier.padding(top = 12.dp),
         )
     }
 }

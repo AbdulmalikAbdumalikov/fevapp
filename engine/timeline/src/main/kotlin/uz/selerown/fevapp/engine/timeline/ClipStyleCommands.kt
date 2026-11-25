@@ -5,6 +5,7 @@ import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.Project
+import uz.selerown.fevapp.core.model.TransitionType
 
 /*
  * Commands that change how a main-track clip plays or looks (speed, color).
@@ -31,6 +32,34 @@ class SetClipSpeedCommand(
         val end = maxOf(clip.trimEndUs, minOf(clip.trimStartUs + minSource, clip.source.durationUs))
         val updated = clip.copy(speed = value, trimEndUs = end)
         return project.updateMainTrack { t -> t.copy(clips = t.clips.toMutableList().apply { set(index, updated) }) }
+    }
+}
+
+/**
+ * Sets the transition after [clipId] (into the next clip), or after every
+ * clip but the last when [clipId] is null. The length is limited so the
+ * transition never covers more than half of either neighbour.
+ */
+class SetTransitionCommand(
+    private val clipId: String?,
+    private val type: TransitionType,
+    private val durationUs: Long,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val clips = project.mainTrack.clips
+        val targets = if (clipId == null) clips.indices.toList().dropLast(1) else listOf(clips.indexOfFirst { it.id == clipId })
+        if (targets.isEmpty() || targets.any { it < 0 || it >= clips.lastIndex }) return project
+        var changed = false
+        val updated = clips.mapIndexed { i, clip ->
+            if (i !in targets) return@mapIndexed clip
+            val maxLen = minOf(clip.durationUs, clips[i + 1].durationUs)
+            val length = durationUs.coerceIn(Clip.MIN_TRANSITION_US, Clip.MAX_TRANSITION_US).coerceAtMost(maxLen)
+            val next = clip.copy(transition = type, transitionUs = length)
+            if (next != clip) changed = true
+            next
+        }
+        if (!changed) return project
+        return project.updateMainTrack { it.copy(clips = updated) }
     }
 }
 

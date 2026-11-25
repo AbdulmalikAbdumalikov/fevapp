@@ -41,6 +41,7 @@
     <string name="tool_move_right">Oʻngga</string>
     <string name="tool_volume">Ovoz</string>
     <string name="tool_reverse">Teskari</string>
+    <string name="tool_transition">Oʻtish</string>
     <string name="tool_extract_audio">Ovozni ajratish</string>
 
     <!-- Tools: text / audio clip selected -->
@@ -101,6 +102,15 @@
     <string name="adjust_warmth">Iliqlik</string>
     <string name="value_signed_percent">%1$+d%%</string>
 
+    <!-- Transition sheet -->
+    <string name="transition_type">Turi</string>
+    <string name="transition_none">Yoʻq</string>
+    <string name="transition_black">Qora orqali</string>
+    <string name="transition_white">Oq orqali</string>
+    <string name="transition_length">Davomiyligi</string>
+    <string name="transition_hint">Oʻtish shu klip bilan keyingisi orasida boʻladi. Kesilgan joyda timelineʼda belgi koʻrinadi.</string>
+    <string name="transition_marker">Oʻtish</string>
+
     <!-- Audio sheets -->
     <string name="audio_add_music">Qurilmadan musiqa</string>
     <string name="audio_add_from_video">Videodan ovoz</string>
@@ -129,6 +139,7 @@
     <string name="msg_playhead_outside">Avval oʻynatgich chizigʻini kerakli joyga qoʻying</string>
     <string name="msg_speed_photo">Rasm uchun tezlik yoʻq. Uzunligini kesish bilan oʻzgartiring.</string>
     <string name="msg_record_failed">Ovoz yozib boʻlmadi. Mikrofon boshqa ilovada band boʻlishi mumkin.</string>
+    <string name="msg_transition_last">Oxirgi klipdan keyin oʻtish yoʻq. Undan oldingi klipni tanlang.</string>
     <string name="msg_text_empty">Matn boʻsh boʻlmasligi kerak</string>
     <string name="msg_empty_export">Eksport uchun avval klip qoʻshing</string>
 </resources>

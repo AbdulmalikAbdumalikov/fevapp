@@ -3,6 +3,8 @@ package uz.selerown.fevapp.engine.render
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
+import uz.selerown.fevapp.core.model.TransitionType
+import kotlin.math.abs
 
 /**
  * One 3×4 color matrix per clip (rows R, G, B; columns R, G, B, offset; values
@@ -99,6 +101,43 @@ object ColorMath {
             }
         }
         return out
+    }
+
+    // ---- Transitions (dip to black / white around a cut) -----------------
+
+    /**
+     * How far the picture at timeline time [timeUs] is faded for a transition:
+     * 0 = not at all, 1 = fully black/white (exactly on the cut). Null when no
+     * transition is active there.
+     */
+    fun fadeAt(clips: List<Clip>, timeUs: Long): Pair<TransitionType, Float>? {
+        var cut = 0L
+        for (i in 0 until clips.lastIndex) {
+            val clip = clips[i]
+            cut += clip.durationUs
+            if (clip.transition == TransitionType.NONE) continue
+            val half = clip.transitionUs / 2
+            val distance = abs(timeUs - cut)
+            if (half > 0 && distance < half) return clip.transition to (1f - distance.toFloat() / half)
+        }
+        return null
+    }
+
+    /** Matrix that fades toward black or white by [amount] (0..1). */
+    fun fadeMatrix(type: TransitionType, amount: Float): FloatArray {
+        val k = 1f - amount
+        val o = if (type == TransitionType.FADE_WHITE) amount else 0f
+        return floatArrayOf(
+            k, 0f, 0f, o,
+            0f, k, 0f, o,
+            0f, 0f, k, o,
+        )
+    }
+
+    /** Clip colors first, then the transition fade. Null when nothing changes. */
+    fun combined(clipMatrix: FloatArray?, fade: Pair<TransitionType, Float>?): FloatArray? = when {
+        fade == null -> clipMatrix
+        else -> multiply(fadeMatrix(fade.first, fade.second), clipMatrix ?: IDENTITY)
     }
 
     /** Applies [m] to one color (0..1 values). Used by tests. */

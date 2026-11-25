@@ -5,6 +5,7 @@ import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.MediaSource
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.TransitionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -45,5 +46,17 @@ class ColorMathTest {
         val media3 = ColorMath.toMedia3Matrix(m)
         close(0.2f, media3[12])
         close(1f, media3[15])
+    }
+
+    @Test
+    fun `fade peaks on the cut and is gone outside the transition`() {
+        val a = clip.copy(id = "a", transition = TransitionType.FADE_BLACK, transitionUs = 400_000)
+        val b = clip.copy(id = "b")
+        val clips = listOf(a, b) // cut at 1 s
+        assertNull(ColorMath.fadeAt(clips, 700_000))
+        close(1f, ColorMath.fadeAt(clips, 1_000_000)!!.second)
+        close(0.5f, ColorMath.fadeAt(clips, 1_100_000)!!.second)
+        val (r, _, _) = ColorMath.apply(ColorMath.fadeMatrix(TransitionType.FADE_WHITE, 1f), 0.2f, 0.2f, 0.2f)
+        close(1f, r)
     }
 }

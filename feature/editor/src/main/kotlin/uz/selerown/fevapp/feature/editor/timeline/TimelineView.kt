@@ -4,6 +4,8 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateDecay
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -24,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material3.Icon
@@ -53,6 +56,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import uz.selerown.fevapp.core.model.TransitionType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
@@ -221,6 +226,12 @@ internal fun TimelineView(
                         onTrimEnd = onTrimEnd,
                     )
                 }
+                // Small badge on every cut that has a transition.
+                var cutUs = 0L
+                clips.dropLast(1).forEach { clip ->
+                    cutUs += clip.durationUs
+                    if (clip.transition != TransitionType.NONE) TransitionMarker(xOf(cutUs))
+                }
                 AddClipButton(
                     xPx = xOf(project.durationUs) + with(density) { 12.dp.toPx() },
                     onClick = onAddClip,
@@ -379,6 +390,27 @@ private fun LaneRow(
         val lastEnd = items.maxOfOrNull { it.endUs }
         val chipX = if (lastEnd == null) xOf(0L) else xOf(lastEnd) + with(density) { 8.dp.toPx() }
         AddChip(if (lastEnd == null) addLabel else null, addLabel, chipX, onAdd)
+    }
+}
+
+@Composable
+private fun TransitionMarker(xPx: Float) {
+    val c = FevTheme.colors
+    val density = LocalDensity.current
+    val size = 22.dp
+    val label = stringResource(R.string.transition_marker)
+    Box(
+        Modifier
+            .offset { IntOffset((xPx - with(density) { size.toPx() } / 2).roundToInt(), with(density) { 21.dp.roundToPx() }) }
+            .zIndex(2f)
+            .size(size)
+            .clip(CircleShape)
+            .background(c.surfaceHigh)
+            .border(1.dp, c.accent, CircleShape)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(Icons.Rounded.Animation, contentDescription = null, tint = c.accent, modifier = Modifier.size(14.dp))
     }
 }
 

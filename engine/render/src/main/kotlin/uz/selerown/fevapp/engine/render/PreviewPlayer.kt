@@ -137,11 +137,17 @@ class PreviewPlayer(private val context: Context) {
     private fun applyClipStyle() {
         val clip = styleOverride ?: clips.getOrNull(player.currentMediaItemIndex)
         player.volume = if (muted) 0f else clip?.volume ?: 1f
-        val style = clip?.let { Triple(it.speed, it.look, it.color) }
-        if (style == appliedClipStyle) return
-        appliedClipStyle = style
-        player.playbackParameters = PlaybackParameters(clip?.speed ?: 1f)
-        _colorMatrix.value = clip?.let(ColorMath::matrixFor)?.let(ColorMath::toAndroidColorMatrix)
+        val speed = clip?.speed ?: 1f
+        if (player.playbackParameters.speed != speed) player.playbackParameters = PlaybackParameters(speed)
+        // Colors: clip look/adjust + transition fade near cuts (quantized to limit redraws).
+        val fade = if (styleOverride == null) ColorMath.fadeAt(clips, _positionUs.value) else null
+        val fadeKey = fade?.let { it.first to (it.second * 20).toInt() }
+        val key = Triple(clip?.look, clip?.color, fadeKey)
+        if (key == appliedClipStyle) return
+        appliedClipStyle = key
+        val quantized = fade?.let { it.first to (fadeKey!!.second / 20f) }
+        _colorMatrix.value = ColorMath.combined(clip?.let(ColorMath::matrixFor), quantized)
+            ?.let(ColorMath::toAndroidColorMatrix)
     }
 
     // ---- Audio lane -------------------------------------------------------

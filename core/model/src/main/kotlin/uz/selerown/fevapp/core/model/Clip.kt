@@ -20,6 +20,10 @@ data class Clip(
     val look: ClipLook = ClipLook.NONE,
     /** Manual color adjustments, applied after [look]. */
     val color: ColorAdjust = ColorAdjust(),
+    /** Transition into the NEXT clip (ignored on the last clip). */
+    val transition: TransitionType = TransitionType.NONE,
+    /** Total transition length, centered on the cut. */
+    val transitionUs: Long = DEFAULT_TRANSITION_US,
 ) {
     val sourceLengthUs: Long
         get() = trimEndUs - trimStartUs
@@ -39,6 +43,10 @@ data class Clip(
 
         /** A photo can be stretched up to this length. */
         const val MAX_IMAGE_DURATION_US: Long = 60_000_000L
+
+        const val DEFAULT_TRANSITION_US: Long = 600_000L
+        const val MIN_TRANSITION_US: Long = 200_000L
+        const val MAX_TRANSITION_US: Long = 1_500_000L
 
         const val MIN_SPEED = 0.25f
         const val MAX_SPEED = 4f
@@ -73,3 +81,7 @@ data class ColorAdjust(
     val isNeutral: Boolean
         get() = brightness == 0f && contrast == 0f && saturation == 0f && warmth == 0f
 }
+
+/** Original, simple transitions: the cut dips through black or white. */
+@Serializable
+enum class TransitionType { NONE, FADE_BLACK, FADE_WHITE }

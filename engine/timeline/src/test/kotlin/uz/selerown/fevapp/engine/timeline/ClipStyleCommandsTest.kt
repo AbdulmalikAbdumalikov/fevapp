@@ -3,6 +3,7 @@ package uz.selerown.fevapp.engine.timeline
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.TransitionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -47,5 +48,16 @@ class ClipStyleCommandsTest {
         val all = SetClipColorCommand(null, ClipLook.MONO, ColorAdjust()).apply(sampleProject())
         assertEquals(setOf(ClipLook.MONO), all.mainTrack.clips.map { it.look }.toSet())
         assertSame(all, SetClipColorCommand(null, ClipLook.MONO, ColorAdjust()).apply(all))
+    }
+
+    @Test
+    fun `transition is clamped and not allowed after the last clip`() {
+        val p = SetTransitionCommand("a", TransitionType.FADE_BLACK, 9 * SEC).apply(sampleProject())
+        assertEquals(TransitionType.FADE_BLACK, p.mainTrack.clips[0].transition)
+        assertEquals(1_500_000L, p.mainTrack.clips[0].transitionUs)
+        val base = sampleProject()
+        assertSame(base, SetTransitionCommand("c", TransitionType.FADE_WHITE, SEC).apply(base))
+        val all = SetTransitionCommand(null, TransitionType.FADE_WHITE, SEC).apply(base)
+        assertEquals(listOf(TransitionType.FADE_WHITE, TransitionType.FADE_WHITE, TransitionType.NONE), all.mainTrack.clips.map { it.transition })
     }
 }

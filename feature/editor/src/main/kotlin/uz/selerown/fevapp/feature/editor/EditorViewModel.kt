@@ -27,6 +27,7 @@ import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
+import uz.selerown.fevapp.core.model.TransitionType
 import uz.selerown.fevapp.engine.render.MediaImporter
 import uz.selerown.fevapp.engine.render.PreviewPlayer
 import uz.selerown.fevapp.engine.render.VoiceRecorder
@@ -48,6 +49,7 @@ import uz.selerown.fevapp.engine.timeline.SetClipColorCommand
 import uz.selerown.fevapp.engine.timeline.SetClipSpeedCommand
 import uz.selerown.fevapp.engine.timeline.SetClipVolumeCommand
 import uz.selerown.fevapp.engine.timeline.SetTextTimingCommand
+import uz.selerown.fevapp.engine.timeline.SetTransitionCommand
 import uz.selerown.fevapp.engine.timeline.SplitAudioCommand
 import uz.selerown.fevapp.engine.timeline.SplitClipCommand
 import uz.selerown.fevapp.engine.timeline.TimelineCommand
@@ -360,6 +362,18 @@ class EditorViewModel @Inject constructor(
             val named = clip.copy(name = context.getString(R.string.voice_clip_name, number))
             if (execute(AddAudioCommand(named))) select(Selection(Lane.AUDIO, named.id))
         }
+    }
+
+    /** Transition after the selected clip (into the next one), or after every clip. */
+    fun setTransition(type: TransitionType, durationUs: Long, applyToAll: Boolean) {
+        val id = _state.value.selectedClipId
+        closeTool()
+        val clips = current?.mainTrack?.clips ?: return
+        if (!applyToAll && clips.lastOrNull()?.id == id) {
+            message(R.string.msg_transition_last)
+            return
+        }
+        execute(SetTransitionCommand(if (applyToAll) null else id ?: return, type, durationUs))
     }
 
     fun setClipVolume(volume: Float) {

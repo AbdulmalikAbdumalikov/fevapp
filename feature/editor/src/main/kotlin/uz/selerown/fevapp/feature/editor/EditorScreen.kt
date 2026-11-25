@@ -197,6 +197,7 @@ internal fun EditorScreen(
             onSetSpeed = viewModel::setClipSpeed,
             onPreviewColor = viewModel::previewColor,
             onSetColor = viewModel::setClipColor,
+            onSetTransition = viewModel::setTransition,
         )
     }
 }

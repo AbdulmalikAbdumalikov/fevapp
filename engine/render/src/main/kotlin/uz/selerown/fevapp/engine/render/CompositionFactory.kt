@@ -33,8 +33,9 @@ internal object CompositionFactory {
         val size = OutputSizeCalculator.calculate(project, settings)
         val texts = project.textClips.filter { it.startUs < project.durationUs }
         var startUs = 0L
-        val items = project.mainTrack.clips.map { clip ->
-            mainItem(clip, startUs, texts, size, settings).also { startUs += clip.durationUs }
+        val clips = project.mainTrack.clips
+        val items = clips.mapIndexed { index, clip ->
+            mainItem(clips, index, startUs, texts, size, settings).also { startUs += clip.durationUs }
         }
         val main = EditedMediaItemSequence.Builder(items)
             // Photos have no sound: fill silence so the output always has audio.
@@ -45,15 +46,17 @@ internal object CompositionFactory {
     }
 
     private fun mainItem(
-        clip: Clip,
+        clips: List<Clip>,
+        index: Int,
         startUs: Long,
         texts: List<TextClip>,
         size: OutputSize,
         settings: ExportSettings,
     ): EditedMediaItem {
+        val clip = clips[index]
         val endUs = startUs + clip.durationUs
         val videoEffects = mutableListOf<Effect>()
-        videoEffects += ClipEffects.color(clip) // before the overlay, so text keeps its colors
+        videoEffects += ClipEffects.color(clips, index, startUs) // before the overlay, so text keeps its colors
         videoEffects += listOf(
             Presentation.createForWidthAndHeight(size.width, size.height, Presentation.LAYOUT_SCALE_TO_FIT),
             FrameDropEffect.createDefaultFrameDropEffect(settings.frameRate.toFloat()),

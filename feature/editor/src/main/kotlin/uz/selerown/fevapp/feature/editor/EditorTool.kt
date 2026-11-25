@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.Animation
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -54,6 +55,7 @@ enum class EditorTool(
     EXTRACT_AUDIO(R.string.tool_extract_audio, Icons.Rounded.GraphicEq, false),
     CLIP_SPEED(R.string.tool_speed, Icons.Rounded.Speed, true),
     CLIP_FILTER(R.string.tool_filter, Icons.Rounded.Filter, true),
+    TRANSITION(R.string.tool_transition, Icons.Rounded.Animation, true),
     REVERSE(R.string.tool_reverse, Icons.Rounded.FastRewind, true),
 
     // Text / audio lane item: button alternatives to dragging and trimming
@@ -68,7 +70,7 @@ enum class EditorTool(
         val mainTools = listOf(EDIT, AUDIO, TEXT, FILTER, SPEED, CAPTIONS, FORMAT)
 
         /** Move left/right are the visible alternative to long-press dragging. */
-        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, VOLUME, EXTRACT_AUDIO, REVERSE)
+        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)
 
         val textTools = listOf(TEXT_EDIT, DUPLICATE, DELETE, MOVE_HERE, START_HERE, END_HERE)
 

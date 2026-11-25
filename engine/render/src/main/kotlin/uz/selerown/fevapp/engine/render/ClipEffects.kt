@@ -9,6 +9,7 @@ import androidx.media3.common.audio.SpeedProvider
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.RgbMatrix
 import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.TransitionType
 
 /**
  * Export-side effects of a clip: its color matrix ([ColorMath], the same one
@@ -16,10 +17,42 @@ import uz.selerown.fevapp.core.model.Clip
  */
 object ClipEffects {
 
-    fun color(clip: Clip): List<Effect> {
-        val matrix = ColorMath.matrixFor(clip) ?: return emptyList()
-        val media3 = ColorMath.toMedia3Matrix(matrix)
-        return listOf(RgbMatrix { _, _ -> media3 })
+    /**
+     * Color matrix of the main-track item [index] (starting at [itemStartUs]
+     * on the timeline): its own look/adjustments plus any transition fade at
+     * its edges. Empty when the item's colors never change.
+     */
+    fun color(clips: List<Clip>, index: Int, itemStartUs: Long): List<Effect> {
+        val clip = clips[index]
+        val clipMatrix = ColorMath.matrixFor(clip)
+        val touchesTransition = clip.transition != TransitionType.NONE && index < clips.lastIndex ||
+            index > 0 && clips[index - 1].transition != TransitionType.NONE
+        if (!touchesTransition) {
+            val m = clipMatrix ?: return emptyList()
+            val media3 = ColorMath.toMedia3Matrix(m)
+            return listOf(RgbMatrix { _, _ -> media3 })
+        }
+        return listOf(TimelineColorMatrix(clips, itemStartUs, clipMatrix))
+    }
+
+    /**
+     * Time-dependent matrix for items next to a transition. Like the text
+     * overlay, the first frame timestamp is taken as the item's start.
+     */
+    private class TimelineColorMatrix(
+        private val clips: List<Clip>,
+        private val itemStartUs: Long,
+        private val clipMatrix: FloatArray?,
+    ) : RgbMatrix {
+        private var firstTimestampUs: Long? = null
+        private val identity = ColorMath.toMedia3Matrix(floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f))
+
+        override fun getMatrix(presentationTimeUs: Long, useHdr: Boolean): FloatArray {
+            val base = firstTimestampUs ?: presentationTimeUs.also { firstTimestampUs = it }
+            val timelineUs = itemStartUs + (presentationTimeUs - base)
+            val m = ColorMath.combined(clipMatrix, ColorMath.fadeAt(clips, timelineUs)) ?: return identity
+            return ColorMath.toMedia3Matrix(m)
+        }
     }
 
     /** Constant playback speed for export (pitch kept, like the preview). */

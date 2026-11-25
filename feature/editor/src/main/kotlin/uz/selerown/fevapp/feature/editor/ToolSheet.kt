@@ -22,6 +22,7 @@ import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextStyle
+import uz.selerown.fevapp.core.model.TransitionType
 
 /**
  * Opens the bottom sheet of [tool]. Text, audio, volume and format sheets
@@ -43,6 +44,7 @@ internal fun ToolSheet(
     onSetSpeed: (Float) -> Unit,
     onPreviewColor: (ClipLook, ColorAdjust) -> Unit,
     onSetColor: (ClipLook, ColorAdjust, Boolean) -> Unit,
+    onSetTransition: (TransitionType, Long, Boolean) -> Unit,
 ) {
     val selectedClip = project?.mainTrack?.clips?.firstOrNull { it.id == selection?.id }
     val selectedId = selection?.id
@@ -58,6 +60,8 @@ internal fun ToolSheet(
         EditorTool.CLIP_SPEED -> selectedClip?.let { SpeedSheet(it, onDismiss, onSetSpeed) }
             ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.CLIP_FILTER -> selectedClip?.let { FilterSheet(it, onPreviewColor, onDismiss, onSetColor) }
+            ?: LaunchedEffect(Unit) { onDismiss() }
+        EditorTool.TRANSITION -> selectedClip?.let { TransitionSheet(it, onDismiss, onSetTransition) }
             ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound, onRecordVoice)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
