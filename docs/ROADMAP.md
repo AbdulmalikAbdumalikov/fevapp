@@ -12,8 +12,10 @@ Fevapp stays **free and offline** in every phase.
 
 ## Phase 2 — Core editing
 
-- **Text**: text clips on the text lane, bundled fonts, styles, in/out animations
-- **Audio**: music from device, voice-over recording, per-clip volume, fade in/out, extract audio
+- ✅ **Text**: text clips on the text lane, styles (size, color, box, bold, font family, position)
+- ⬜ Text: bundled fonts, in/out animations, free drag on the preview
+- ✅ **Audio**: music from device, sound from a video, per-clip volume, fade in/out, extract audio
+- ⬜ Audio: voice-over recording (RECORD_AUDIO, still offline), waveform on the lane
 - **Speed**: constant speed (0.25×–4×) and speed curves
 - **Filters & adjustments** (OpenGL ES via Media3 effects): brightness, contrast, saturation, warmth, looks
 - **Transitions** between clips (fade, slide, zoom …) via `engine:effects` plugins

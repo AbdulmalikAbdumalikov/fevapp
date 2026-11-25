@@ -22,6 +22,9 @@
 | accent | `#6EA8FE` | Primary actions, selection, trim handles |
 | onAccent | `#0B1220` | Text/icons on accent |
 | danger | `#F87171` | Delete actions |
+| clipFill | `#2E3440` | Main-track clip background |
+| textClipFill | `#4B3B7A` | Text-lane clips |
+| audioClipFill | `#1E5A45` | Audio-lane clips |
 
 ## Typography
 
@@ -59,7 +62,10 @@
    **fixed center playhead**, content scrolls under it
 5. Bottom tool bar (horizontal scroll):
    - nothing selected: Kesish, Audio, Matn, Filtr, Tezlik, Subtitr, Format
-   - clip selected: Boʻlish, Oʻchirish, Nusxa, Chapga, Oʻngga, Tezlik, Ovoz, Teskari
+   - clip selected: Boʻlish, Oʻchirish, Nusxa, Chapga, Oʻngga, Ovoz, Ovozni ajratish, Tezlik, Teskari
+   - text selected: Tahrirlash, Nusxa, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
+   - audio selected: Ovoz, Boʻlish, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
+     (the last three are the button alternatives to dragging and trimming)
 6. Tool panels open as bottom sheets with **✕** (close) and **✓** (apply).
 
 ## Language

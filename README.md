@@ -22,16 +22,26 @@ so English and Russian can be added later.
 - Export MP4 (720p/1080p, 30/60 fps) with Media3 Transformer → saved to gallery (Movies/Fevapp) → share sheet
 - Projects auto-saved in Room and reopened from Home (rename / duplicate / delete)
 
+## What works (phase 2 — text & audio)
+
+- **Text** on its own lane: add at the playhead, edit words, size, color, background box, bold,
+  font (sans / serif / mono), position (top / middle / bottom); move (long-press) and trim (handles)
+  or use the buttons *Shu yerga*, *Boshi shu yerda*, *Oxiri shu yerda*. The same renderer draws the
+  preview and the exported video, so they match.
+- **Audio** lane: music from the device (system file picker) or the sound of another video;
+  volume, fade in / fade out, split, move, trim; several clips may overlap and are mixed on export
+- **Clip volume** and **Ovozni ajratish** (extract a clip's sound to the audio lane and mute the clip)
+
 ## Architecture
 
 ```
 :app                    Application, MainActivity, navigation graph
 :core:designsystem      Theme, color tokens, Manrope font, shared components
-:core:model             Project → Track → Clip (immutable, microseconds, serializable)
+:core:model             Project → Track → Clip, TextClip, AudioClip (immutable, microseconds, serializable)
 :core:common            Small utilities (ids, time formatting)
 :core:database          Room: projects table + ProjectRepository
-:engine:timeline        Commands (add/trim/split/delete/move/duplicate/format) + EditHistory (undo/redo)
-:engine:render          Media3: preview player, media import, Composition + Transformer export, gallery saver
+:engine:timeline        Clip + lane commands (text, audio, volume, extract) + EditHistory (undo/redo)
+:engine:render          Media3: preview (+ synced audio-lane players), import, text renderer/overlay, gain, export
 :engine:effects         Plugin interfaces (Effect, Filter, Transition) for future features
 :feature:home           Home screen (projects grid, new project)
 :feature:editor         Editor (preview, timeline, tools)
