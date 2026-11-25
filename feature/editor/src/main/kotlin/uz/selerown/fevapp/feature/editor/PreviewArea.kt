@@ -52,6 +52,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import uz.selerown.fevapp.core.designsystem.component.FevIconButton
+import uz.selerown.fevapp.core.designsystem.component.FevPrimaryButton
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.engine.render.TextRenderer
@@ -77,6 +78,7 @@ internal fun PreviewArea(
     onOverlayTransform: (id: String, x: Float, y: Float, scale: Float) -> Unit,
     onOverlayTransformEnd: () -> Unit,
     onSelectElement: (Selection) -> Unit,
+    onAddMedia: () -> Unit,
     isPlaying: Boolean,
     fullscreen: Boolean,
     onTogglePlay: () -> Unit,
@@ -97,7 +99,8 @@ internal fun PreviewArea(
                 .size(frameWidth, frameHeight)
                 .background(Color(project.backgroundColor)), // video content color, not a UI color
         ) {
-        AndroidView(
+        // No clips: no player view (otherwise its last frame would stay on screen).
+        if (project.mainTrack.clips.isNotEmpty()) AndroidView(
             factory = { ctx ->
                 (LayoutInflater.from(ctx).inflate(R.layout.preview_player_view, null) as PlayerView).apply {
                     layoutParams = ViewGroup.LayoutParams(
@@ -143,6 +146,14 @@ internal fun PreviewArea(
             onOverlayTransform = onOverlayTransform,
             onOverlayTransformEnd = onOverlayTransformEnd,
         )
+        }
+        if (project.mainTrack.clips.isEmpty()) {
+            // Empty project (new or every clip deleted): one clear next step.
+            FevPrimaryButton(
+                text = stringResource(R.string.editor_add_first_media),
+                onClick = onAddMedia,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
         if (fullscreen) {
             PlayButton(isPlaying, onTogglePlay, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))

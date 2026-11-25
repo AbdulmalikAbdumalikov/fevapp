@@ -17,6 +17,7 @@
 
     <!-- Timeline -->
     <string name="editor_add_clip">Klip qoʻshish</string>
+    <string name="editor_add_first_media">Video yoki rasm qoʻshish</string>
     <string name="editor_add_text">Matn qoʻshish</string>
     <string name="editor_add_audio">Audio qoʻshish</string>
     <string name="editor_add_overlay">Ustki qatlam qoʻshish</string>
