@@ -116,10 +116,10 @@ internal fun PlayButton(isPlaying: Boolean, onClick: () -> Unit, modifier: Modif
     }
 }
 
-/** Horizontally scrollable tools; content depends on whether a clip is selected. */
+/** Horizontally scrollable tools; content depends on what is selected ([lane] = null: nothing). */
 @Composable
 internal fun EditorToolbar(
-    clipSelected: Boolean,
+    lane: Lane?,
     onDeselect: () -> Unit,
     onTool: (EditorTool) -> Unit,
 ) {
@@ -129,10 +129,10 @@ internal fun EditorToolbar(
         Modifier.fillMaxWidth().background(c.surface).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (clipSelected) {
+        if (lane != null) {
             FevIconButton(Icons.Rounded.Close, stringResource(R.string.editor_deselect), onDeselect)
         }
-        val tools = if (clipSelected) EditorTool.clipTools else EditorTool.mainTools
+        val tools = EditorTool.toolsFor(lane)
         LazyRow(Modifier.weight(1f)) {
             items(tools, key = { it.name }) { tool ->
                 FevToolButton(

@@ -41,6 +41,13 @@
     <string name="tool_move_right">Oʻngga</string>
     <string name="tool_volume">Ovoz</string>
     <string name="tool_reverse">Teskari</string>
+    <string name="tool_extract_audio">Ovozni ajratish</string>
+
+    <!-- Tools: text / audio clip selected -->
+    <string name="tool_text_edit">Tahrirlash</string>
+    <string name="tool_move_here">Shu yerga</string>
+    <string name="tool_start_here">Boshi shu yerda</string>
+    <string name="tool_end_here">Oxiri shu yerda</string>
 
     <!-- Sheets -->
     <string name="sheet_close">Yopish</string>
@@ -48,10 +55,51 @@
     <string name="sheet_coming_soon">Bu vosita keyingi yangilanishda qoʻshiladi. Fevapp doim bepul boʻlib qoladi.</string>
     <string name="format_original">Asl</string>
 
+    <!-- Text sheet -->
+    <string name="text_hint">Matn kiriting</string>
+    <string name="text_size">Oʻlcham</string>
+    <string name="text_color">Rang</string>
+    <string name="text_style">Koʻrinish</string>
+    <string name="text_background">Fon</string>
+    <string name="text_bold">Qalin</string>
+    <string name="text_font">Shrift</string>
+    <string name="font_sans">Oddiy</string>
+    <string name="font_serif">Serif</string>
+    <string name="font_mono">Mono</string>
+    <string name="text_position">Joylashuv</string>
+    <string name="position_top">Tepa</string>
+    <string name="position_middle">Oʻrta</string>
+    <string name="position_bottom">Past</string>
+    <string name="color_white">Oq</string>
+    <string name="color_black">Qora</string>
+    <string name="color_yellow">Sariq</string>
+    <string name="color_red">Qizil</string>
+    <string name="color_green">Yashil</string>
+    <string name="color_blue">Koʻk</string>
+    <string name="color_pink">Pushti</string>
+
+    <!-- Audio sheets -->
+    <string name="audio_add_music">Qurilmadan musiqa</string>
+    <string name="audio_add_from_video">Videodan ovoz</string>
+    <string name="audio_hint">Audio oʻynatgich chizigʻi turgan joydan boshlab qoʻshiladi.</string>
+    <string name="volume_label">Ovoz balandligi</string>
+    <string name="fade_in">Asta kirish</string>
+    <string name="fade_out">Asta chiqish</string>
+    <string name="value_percent">%1$d%%</string>
+    <string name="value_seconds">%1$.1f s</string>
+    <string name="audio_extracted_name">Klip ovozi</string>
+
+    <!-- Lane items (screen reader) -->
+    <string name="lane_text_item">Matn: %1$s</string>
+    <string name="lane_audio_item">Audio: %1$s</string>
+
     <!-- Messages -->
     <string name="msg_split_failed">Bu yerda boʻlib boʻlmaydi. Oʻynatgich chizigʻini klip ichiga qoʻying.</string>
     <string name="msg_no_clip_here">Oʻynatgich chizigʻi ostida klip yoʻq</string>
     <string name="msg_import_failed">Tanlangan fayllarni ochib boʻlmadi</string>
     <string name="msg_project_missing">Loyiha topilmadi</string>
+    <string name="msg_extract_failed">Bu klipda ajratib olinadigan ovoz yoʻq</string>
+    <string name="msg_playhead_outside">Avval oʻynatgich chizigʻini kerakli joyga qoʻying</string>
+    <string name="msg_text_empty">Matn boʻsh boʻlmasligi kerak</string>
     <string name="msg_empty_export">Eksport uchun avval klip qoʻshing</string>
 </resources>

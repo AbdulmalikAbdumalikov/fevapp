@@ -4,11 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,11 +18,51 @@ import androidx.compose.ui.unit.dp
 import uz.selerown.fevapp.core.designsystem.component.FevToolSheet
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.CanvasFormat
+import uz.selerown.fevapp.core.model.Project
+import uz.selerown.fevapp.core.model.TextStyle
 
-/** Bottom sheet for tools. Format works now; the rest arrive in Phase 2+. */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Opens the bottom sheet of [tool]. Text, audio, volume and format sheets
+ * work; the others still say "coming soon".
+ */
 @Composable
 internal fun ToolSheet(
+    tool: EditorTool,
+    project: Project?,
+    selection: Selection?,
+    onDismiss: () -> Unit,
+    onApplyFormat: (CanvasFormat) -> Unit,
+    onSaveText: (editingId: String?, text: String, style: TextStyle) -> Unit,
+    onPickMusic: () -> Unit,
+    onPickVideoSound: () -> Unit,
+    onSetClipVolume: (Float) -> Unit,
+    onSetAudioMix: (volume: Float, fadeInUs: Long, fadeOutUs: Long) -> Unit,
+) {
+    val selectedId = selection?.id
+    when (tool) {
+        EditorTool.TEXT -> TextSheet(null, stringResource(R.string.editor_add_text), onDismiss) { text, style ->
+            onSaveText(null, text, style)
+        }
+        EditorTool.TEXT_EDIT -> project?.textClips?.firstOrNull { it.id == selectedId }?.let { clip ->
+            TextSheet(clip, stringResource(R.string.tool_text_edit), onDismiss) { text, style ->
+                onSaveText(clip.id, text, style)
+            }
+        } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)
+        EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound)
+        EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
+            ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)
+        } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)
+        EditorTool.AUDIO_MIX -> project?.audioClips?.firstOrNull { it.id == selectedId }?.let { clip ->
+            AudioMixSheet(clip, onDismiss, onSetAudioMix)
+        } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)
+        else -> GenericSheet(tool, project?.canvas, onDismiss, onApplyFormat)
+    }
+}
+
+/** Format (canvas) picker and the "coming soon" placeholder for unfinished tools. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GenericSheet(
     tool: EditorTool,
     currentFormat: CanvasFormat?,
     onDismiss: () -> Unit,
@@ -43,16 +82,7 @@ internal fun ToolSheet(
                 modifier = Modifier.padding(vertical = 12.dp),
             ) {
                 CanvasFormat.entries.forEach { option ->
-                    FilterChip(
-                        selected = option == format,
-                        onClick = { format = option },
-                        label = { Text(option.label()) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = FevTheme.colors.accent,
-                            selectedLabelColor = FevTheme.colors.onAccent,
-                        ),
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
+                    ChoiceChip(option.label(), option == format) { format = option }
                 }
             }
             else -> Text(

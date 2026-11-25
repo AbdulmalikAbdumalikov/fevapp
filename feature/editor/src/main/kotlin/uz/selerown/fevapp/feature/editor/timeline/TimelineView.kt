@@ -20,9 +20,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -53,6 +58,9 @@ import kotlinx.coroutines.launch
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.feature.editor.R
+import uz.selerown.fevapp.feature.editor.Lane
+import uz.selerown.fevapp.feature.editor.LaneDraft
+import uz.selerown.fevapp.feature.editor.Selection
 import uz.selerown.fevapp.feature.editor.TrimDraft
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -69,19 +77,23 @@ private val LaneHeight = 44.dp
 internal fun TimelineView(
     project: Project,
     positionUs: Long,
-    selectedClipId: String?,
+    selection: Selection?,
     trimDraft: TrimDraft?,
+    laneDraft: LaneDraft?,
     dpPerSecond: Float,
     onZoom: (Float) -> Unit,
     onScrubStart: () -> Unit,
     onScrub: (Long) -> Unit,
-    onSelectClip: (String?) -> Unit,
+    onSelect: (Selection?) -> Unit,
     onTrimDrag: (clipId: String, startUs: Long, endUs: Long) -> Unit,
     onTrimEnd: () -> Unit,
     onMoveClip: (clipId: String, toIndex: Int) -> Unit,
+    onLaneMove: (Selection, startUs: Long) -> Unit,
+    onLaneTrim: (Selection, startUs: Long, endUs: Long) -> Unit,
+    onLaneDragEnd: () -> Unit,
     onAddClip: () -> Unit,
-    onTextRow: () -> Unit,
-    onAudioRow: () -> Unit,
+    onAddText: () -> Unit,
+    onAddAudio: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = FevTheme.colors
@@ -94,7 +106,8 @@ internal fun TimelineView(
     val zoom by rememberUpdatedState(onZoom)
     val scrubStart by rememberUpdatedState(onScrubStart)
     val scrub by rememberUpdatedState(onScrub)
-    val select by rememberUpdatedState(onSelectClip)
+    val select by rememberUpdatedState(onSelect)
+    val selectedClipId = selection?.takeIf { it.lane == Lane.MAIN }?.id
 
     val scope = rememberCoroutineScope()
     var flingJob by remember { mutableStateOf<Job?>(null) }
@@ -191,11 +204,11 @@ internal fun TimelineView(
                         selected = clip.id == selectedClipId,
                         draft = trimDraft?.takeIf { it.clipId == clip.id },
                         dragOffsetPx = if (draggingClipId == clip.id) dragOffsetPx else 0f,
-                        onTap = { onSelectClip(clip.id) },
+                        onTap = { onSelect(Selection(Lane.MAIN, clip.id)) },
                         onReorderStart = {
                             draggingClipId = clip.id
                             dragOffsetPx = 0f
-                            onSelectClip(clip.id)
+                            onSelect(Selection(Lane.MAIN, clip.id))
                         },
                         onReorderDrag = { dragOffsetPx += it },
                         onReorderEnd = {
@@ -214,9 +227,57 @@ internal fun TimelineView(
                 )
             }
             Spacer(Modifier.height(6.dp))
-            LaneChip(stringResource(R.string.editor_add_text), xOf(0L), onTextRow)
+            LaneRow(
+                lane = Lane.TEXT,
+                items = project.textClips.map { clip ->
+                    LaneItemModel(
+                        clip.id,
+                        clip.text.lineSequence().first(),
+                        stringResource(R.string.lane_text_item, clip.text),
+                        clip.startUs,
+                        clip.endUs,
+                    )
+                },
+                icon = Icons.Rounded.TextFields,
+                fill = c.textClipFill,
+                addLabel = stringResource(R.string.editor_add_text),
+                xOf = xOf,
+                pxPerUs = pxPerUs,
+                viewportWidthPx = widthPx,
+                selection = selection,
+                draft = laneDraft,
+                onAdd = onAddText,
+                onSelect = onSelect,
+                onMove = onLaneMove,
+                onTrim = onLaneTrim,
+                onDragEnd = onLaneDragEnd,
+            )
             Spacer(Modifier.height(4.dp))
-            LaneChip(stringResource(R.string.editor_add_audio), xOf(0L), onAudioRow)
+            LaneRow(
+                lane = Lane.AUDIO,
+                items = project.audioClips.map { clip ->
+                    LaneItemModel(
+                        clip.id,
+                        clip.name,
+                        stringResource(R.string.lane_audio_item, clip.name),
+                        clip.startUs,
+                        clip.endUs,
+                    )
+                },
+                icon = Icons.Rounded.MusicNote,
+                fill = c.audioClipFill,
+                addLabel = stringResource(R.string.editor_add_audio),
+                xOf = xOf,
+                pxPerUs = pxPerUs,
+                viewportWidthPx = widthPx,
+                selection = selection,
+                draft = laneDraft,
+                onAdd = onAddAudio,
+                onSelect = onSelect,
+                onMove = onLaneMove,
+                onTrim = onLaneTrim,
+                onDragEnd = onLaneDragEnd,
+            )
         }
 
         // Fixed center playhead
@@ -261,22 +322,73 @@ private fun AddClipButton(xPx: Float, onClick: () -> Unit) {
     }
 }
 
-/** Placeholder lanes for text and audio (tap opens the matching tool). */
+/**
+ * One free-positioned lane (text or audio): its clips plus an "add" chip
+ * (at time 0 when empty, otherwise right after the last clip).
+ */
 @Composable
-private fun LaneChip(text: String, xPx: Float, onClick: () -> Unit) {
-    val c = FevTheme.colors
+private fun LaneRow(
+    lane: Lane,
+    items: List<LaneItemModel>,
+    icon: ImageVector,
+    fill: Color,
+    addLabel: String,
+    xOf: (Long) -> Float,
+    pxPerUs: Float,
+    viewportWidthPx: Float,
+    selection: Selection?,
+    draft: LaneDraft?,
+    onAdd: () -> Unit,
+    onSelect: (Selection?) -> Unit,
+    onMove: (Selection, Long) -> Unit,
+    onTrim: (Selection, Long, Long) -> Unit,
+    onDragEnd: () -> Unit,
+) {
+    val density = LocalDensity.current
     Box(Modifier.fillMaxWidth().height(LaneHeight)) {
-        Row(
-            Modifier
-                .offset { IntOffset(xPx.roundToInt(), 0) }
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(8.dp))
-                .background(c.surface)
-                .clickable(role = Role.Button, onClick = onClick)
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Rounded.Add, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(18.dp))
+        items.forEach { item ->
+            val itemSelection = Selection(lane, item.id)
+            val itemDraft = draft?.takeIf { it.id == item.id }
+            LaneItem(
+                model = item,
+                icon = icon,
+                fill = fill,
+                xOfUs = xOf,
+                pxPerUs = pxPerUs,
+                viewportWidthPx = viewportWidthPx,
+                selected = selection == itemSelection,
+                draftStartUs = itemDraft?.startUs,
+                draftEndUs = itemDraft?.endUs,
+                onTap = { onSelect(itemSelection) },
+                onMove = { onMove(itemSelection, it) },
+                onTrim = { s, e -> onTrim(itemSelection, s, e) },
+                onDragEnd = onDragEnd,
+            )
+        }
+        val lastEnd = items.maxOfOrNull { it.endUs }
+        val chipX = if (lastEnd == null) xOf(0L) else xOf(lastEnd) + with(density) { 8.dp.toPx() }
+        AddChip(if (lastEnd == null) addLabel else null, addLabel, chipX, onAdd)
+    }
+}
+
+/** "+ Matn qoʻshish" chip; icon-only (with the same spoken label) when the lane has clips. */
+@Composable
+private fun AddChip(text: String?, description: String, xPx: Float, onClick: () -> Unit) {
+    val c = FevTheme.colors
+    Row(
+        Modifier
+            .offset { IntOffset(xPx.roundToInt(), 0) }
+            .fillMaxHeight()
+            .widthIn(min = 48.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(c.surface)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description }
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Add, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(18.dp))
+        if (text != null) {
             Text(
                 text,
                 style = MaterialTheme.typography.labelLarge,

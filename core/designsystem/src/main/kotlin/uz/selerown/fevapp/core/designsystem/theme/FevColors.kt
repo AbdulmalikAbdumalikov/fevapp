@@ -21,6 +21,8 @@ data class FevColors(
     val onAccent: Color,
     val danger: Color,
     val clipFill: Color,
+    val textClipFill: Color,
+    val audioClipFill: Color,
     val playhead: Color,
 )
 
@@ -36,6 +38,8 @@ val DarkFevColors = FevColors(
     onAccent = Color(0xFF0B1220),
     danger = Color(0xFFF87171),
     clipFill = Color(0xFF2E3440),
+    textClipFill = Color(0xFF4B3B7A),
+    audioClipFill = Color(0xFF1E5A45),
     playhead = Color(0xFFF3F4F6),
 )
 

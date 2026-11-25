@@ -52,6 +52,13 @@ internal fun EditorScreen(
     val openPicker = {
         picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
     }
+    // Music: the system file picker (persistable access, works offline).
+    val musicPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        viewModel.addAudio(uri)
+    }
+    val videoSoundPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        viewModel.addAudio(uri)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -64,7 +71,7 @@ internal fun EditorScreen(
     }
 
     BackHandler(enabled = fullscreen) { fullscreen = false }
-    BackHandler(enabled = !fullscreen && state.selectedClipId != null) { viewModel.selectClip(null) }
+    BackHandler(enabled = !fullscreen && state.selection != null) { viewModel.select(null) }
 
     val project = state.project
     Box(
@@ -79,6 +86,8 @@ internal fun EditorScreen(
         } else if (fullscreen) {
             PreviewArea(
                 player = viewModel.preview.player,
+                project = project,
+                positionUs = positionUs,
                 isPlaying = isPlaying,
                 fullscreen = true,
                 onTogglePlay = viewModel::togglePlay,
@@ -97,6 +106,8 @@ internal fun EditorScreen(
                 )
                 PreviewArea(
                     player = viewModel.preview.player,
+                    project = project,
+                    positionUs = positionUs,
                     isPlaying = isPlaying,
                     fullscreen = false,
                     onTogglePlay = viewModel::togglePlay,
@@ -115,23 +126,27 @@ internal fun EditorScreen(
                 TimelineView(
                     project = project,
                     positionUs = positionUs,
-                    selectedClipId = state.selectedClipId,
+                    selection = state.selection,
                     trimDraft = state.trimDraft,
+                    laneDraft = state.laneDraft,
                     dpPerSecond = pxPerSecond,
                     onZoom = { factor -> pxPerSecond = TimelineZoom.clamp(pxPerSecond * factor) },
                     onScrubStart = viewModel::onScrubStart,
                     onScrub = viewModel::seekTo,
-                    onSelectClip = viewModel::selectClip,
+                    onSelect = viewModel::select,
                     onTrimDrag = viewModel::onTrimDrag,
                     onTrimEnd = viewModel::onTrimEnd,
                     onMoveClip = viewModel::moveClip,
+                    onLaneMove = viewModel::onLaneMove,
+                    onLaneTrim = viewModel::onLaneTrim,
+                    onLaneDragEnd = viewModel::onLaneDragEnd,
                     onAddClip = openPicker,
-                    onTextRow = { viewModel.onTool(EditorTool.TEXT) },
-                    onAudioRow = { viewModel.onTool(EditorTool.AUDIO) },
+                    onAddText = { viewModel.select(null); viewModel.onTool(EditorTool.TEXT) },
+                    onAddAudio = { viewModel.select(null); viewModel.onTool(EditorTool.AUDIO) },
                 )
                 EditorToolbar(
-                    clipSelected = state.selectedClipId != null,
-                    onDeselect = { viewModel.selectClip(null) },
+                    lane = state.selection?.lane,
+                    onDeselect = { viewModel.select(null) },
                     onTool = viewModel::onTool,
                 )
             }
@@ -146,9 +161,17 @@ internal fun EditorScreen(
     state.openTool?.let { tool ->
         ToolSheet(
             tool = tool,
-            currentFormat = project?.canvas,
+            project = project,
+            selection = state.selection,
             onDismiss = viewModel::closeTool,
             onApplyFormat = viewModel::applyFormat,
+            onSaveText = viewModel::saveText,
+            onPickMusic = { musicPicker.launch(arrayOf("audio/*")) },
+            onPickVideoSound = {
+                videoSoundPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+            },
+            onSetClipVolume = viewModel::setClipVolume,
+            onSetAudioMix = viewModel::setAudioMix,
         )
     }
 }

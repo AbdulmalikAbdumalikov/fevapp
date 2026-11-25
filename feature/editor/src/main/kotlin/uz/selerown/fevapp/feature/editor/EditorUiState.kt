@@ -3,22 +3,40 @@ package uz.selerown.fevapp.feature.editor
 import androidx.annotation.StringRes
 import uz.selerown.fevapp.core.model.Project
 
-/** Temporary trim while a handle is being dragged (committed on release). */
+/** The timeline row an item lives on. */
+enum class Lane { MAIN, TEXT, AUDIO }
+
+/** What is selected on the timeline (at most one item). */
+data class Selection(val lane: Lane, val id: String)
+
+/** Temporary trim of a main-track clip while a handle is dragged (committed on release). */
 data class TrimDraft(
     val clipId: String,
     val startUs: Long,
     val endUs: Long,
 )
 
+/** Temporary timeline position of a text/audio clip while it is moved or trimmed. */
+data class LaneDraft(
+    val id: String,
+    val startUs: Long,
+    val endUs: Long,
+)
+
 data class EditorUiState(
     val project: Project? = null,
-    val selectedClipId: String? = null,
+    val selection: Selection? = null,
     val trimDraft: TrimDraft? = null,
+    val laneDraft: LaneDraft? = null,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val openTool: EditorTool? = null,
     val importing: Boolean = false,
-)
+) {
+    /** Selected main-track clip, if the selection is on the main track. */
+    val selectedClipId: String?
+        get() = selection?.takeIf { it.lane == Lane.MAIN }?.id
+}
 
 sealed interface EditorEvent {
     data class Message(@StringRes val text: Int) : EditorEvent
