@@ -1,5 +1,6 @@
 package uz.selerown.fevapp.engine.render
 
+import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -117,6 +118,21 @@ object TextRenderer {
             canvas.drawRoundRect(box, pad, pad, boxPaint)
         }
         canvas.translate(left, top)
+        if (style.stroke) {
+            // Outline pass first (with the shadow), then the letters on top.
+            val fillColor = paint.color
+            val fillAlpha = paint.alpha
+            paint.style = Paint.Style.STROKE
+            paint.strokeJoin = Paint.Join.ROUND
+            paint.strokeWidth = paint.textSize * style.strokeWidth
+            paint.color = style.strokeColor
+            paint.alpha = Color.alpha(style.strokeColor) * alpha / 255
+            layout.draw(canvas)
+            paint.style = Paint.Style.FILL
+            paint.clearShadowLayer()
+            paint.color = fillColor
+            paint.alpha = fillAlpha
+        }
         layout.draw(canvas)
         canvas.restore()
     }
@@ -144,11 +160,22 @@ object TextRenderer {
         return RectF(centerX - halfWidth, top - pad, centerX + halfWidth, top + layout.height + pad)
     }
 
+    private var manrope: Typeface? = null
+
+    /** Loads the bundled font once (called from Application.onCreate). */
+    fun installFonts(context: Context) {
+        if (manrope == null) manrope = runCatching { context.resources.getFont(R.font.text_manrope) }.getOrNull()
+    }
+
     private fun typeface(font: TextFont, bold: Boolean): Typeface {
         val family = when (font) {
             TextFont.SANS -> Typeface.SANS_SERIF
             TextFont.SERIF -> Typeface.SERIF
             TextFont.MONO -> Typeface.MONOSPACE
+            TextFont.MANROPE -> manrope ?: Typeface.SANS_SERIF
+            TextFont.CURSIVE -> Typeface.create("cursive", Typeface.NORMAL)
+            TextFont.CASUAL -> Typeface.create("casual", Typeface.NORMAL)
+            TextFont.CONDENSED -> Typeface.create("sans-serif-condensed", Typeface.NORMAL)
         }
         return Typeface.create(family, if (bold) Typeface.BOLD else Typeface.NORMAL)
     }

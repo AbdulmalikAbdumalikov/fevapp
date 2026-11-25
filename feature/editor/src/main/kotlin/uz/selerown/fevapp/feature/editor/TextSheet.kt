@@ -78,8 +78,12 @@ private val Animations = listOf(
 
 private val Fonts = listOf(
     TextFont.SANS to R.string.font_sans,
+    TextFont.MANROPE to R.string.font_manrope,
     TextFont.SERIF to R.string.font_serif,
     TextFont.MONO to R.string.font_mono,
+    TextFont.CURSIVE to R.string.font_cursive,
+    TextFont.CASUAL to R.string.font_casual,
+    TextFont.CONDENSED to R.string.font_condensed,
 )
 
 /** Add a new text ([initial] = null) or edit an existing one. */
@@ -142,8 +146,38 @@ internal fun TextSheet(
                 ChoiceChip(stringResource(R.string.text_bold), style.bold) { style = style.copy(bold = !style.bold) }
             }
 
-            SheetSection(R.string.text_font)
+            SheetSection(R.string.text_outline)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChoiceChip(stringResource(R.string.text_outline_on), style.stroke) { style = style.copy(stroke = !style.stroke) }
+            }
+            if (style.stroke) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    ContentPalette.forEach { (argb, name) ->
+                        ColorSwatch(argb, stringResource(name), selected = style.strokeColor == argb) {
+                            style = style.copy(strokeColor = argb)
+                        }
+                    }
+                }
+                Text(
+                    stringResource(R.string.text_outline_width),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = c.textSecondary,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                Slider(
+                    value = style.strokeWidth,
+                    onValueChange = { style = style.copy(strokeWidth = it) },
+                    valueRange = TextStyle.MIN_STROKE..TextStyle.MAX_STROKE,
+                    colors = SliderDefaults.colors(thumbColor = c.accent, activeTrackColor = c.accent),
+                )
+            }
+
+            SheetSection(R.string.text_font)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Fonts.forEach { (font, label) ->
                     ChoiceChip(stringResource(label), style.font == font) { style = style.copy(font = font) }
                 }

@@ -28,6 +28,7 @@ dependencies {
     implementation(project(":feature:home"))
     implementation(project(":feature:editor"))
     implementation(project(":feature:export"))
+    implementation(project(":engine:render")) // TextRenderer.installFonts
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

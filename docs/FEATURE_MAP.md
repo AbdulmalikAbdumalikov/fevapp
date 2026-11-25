@@ -5,6 +5,8 @@ Bu hujjat mashhur mobil video muharrirlarda (CapCut va shu kabilar) uchraydigan
 olinadi: ikonkalar, nomlar, logotip, ranglar, shablon/effekt kutubxonalari,
 musiqa va kod ko'chirilmaydi. Fevapp o'z dizayni bilan, bepul va **oflayn** qoladi.
 
+Oxirgi yangilanish: 2026-11-25.
+
 Belgilar: ✅ bor · 🟡 qisman · ⬜ yo'q · ✖ rejada yo'q (internet yoki to'lov talab qiladi)
 
 Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida bosqich)
@@ -42,8 +44,8 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 | Matn, rang, o'lcham, fon, qalin, shrift turi | ✅ | — | |
 | Preview'da surish/kattalashtirish | ✅ | — | |
 | Kirish/chiqish animatsiyalari | 🟡 | O | 3 tasi bor; ko'paytirish oson |
-| Kontur (stroke), soya sozlamalari | ⬜ | O | `TextRenderer` da |
-| Ilova bilan birga keladigan shriftlar | ⬜ | O | Faqat OFL litsenziyali shriftlar |
+| Kontur (stroke): rang va qalinlik | ✅ | — | Soya avtomatik (fon yo'q bo'lsa) |
+| Shriftlar | 🟡 | O | 7 ta: Oddiy, Manrope (OFL, ilova ichida), Serif, Mono, Kursiv, Erkin, Ixcham (telefonning o'zidan). Ko'proq OFL shrift qo'shish mumkin |
 | Matn → ovoz (TTS) | ⬜ | O' | Android'ning oflayn TTS dvigateli bilan |
 | Avtomatik subtitr | ⬜ | Q | 4-bosqich: whisper.cpp (oflayn) |
 | Tayyor matn uslublari | ⬜ | O' | O'zimiz chizgan uslublar |
@@ -112,9 +114,9 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 
 ## Tavsiya etilgan navbat
 
-1. **Kesish/aylantirish/ko'zgu** (crop, rotate, flip) — eng ko'p ishlatiladigan bo'shliq
-2. **Kadrni muzlatish** va **klipni almashtirish** — oson, foydali
-3. **Matn konturi** + yana animatsiyalar + OFL shriftlar
+1. ✅ Kesish/aylantirish/ko'zgu
+2. ✅ Kadrni muzlatish va klipni almashtirish
+3. ✅ Matn konturi + shriftlar (yana animatsiyalar — keyin)
 4. **Klip kirish/chiqish animatsiyalari** va **asosiy klip zoom keyframe'lari**
 5. **Ovoz o'zgartirgich** va **audio tezligi**
 6. **Chroma key** va **niqob**

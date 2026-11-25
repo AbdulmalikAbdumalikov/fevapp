@@ -78,6 +78,13 @@
     <string name="font_sans">Oddiy</string>
     <string name="font_serif">Serif</string>
     <string name="font_mono">Mono</string>
+    <string name="font_manrope">Manrope</string>
+    <string name="font_cursive">Kursiv</string>
+    <string name="font_casual">Erkin</string>
+    <string name="font_condensed">Ixcham</string>
+    <string name="text_outline">Kontur</string>
+    <string name="text_outline_on">Kontur qoʻshish</string>
+    <string name="text_outline_width">Kontur qalinligi</string>
     <string name="text_animation">Animatsiya</string>
     <string name="anim_none">Yoʻq</string>
     <string name="anim_fade">Asta paydo boʻlish</string>

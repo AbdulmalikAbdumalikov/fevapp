@@ -11,9 +11,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class TextAnimation { NONE, FADE, POP, SLIDE_UP }
 
-/** Generic font families available on every device (no downloads). */
+/**
+ * Text fonts, all offline: generic system families, the bundled Manrope
+ * (SIL OFL) and Android's built-in handwriting/casual/condensed families
+ * (devices without them fall back to the default font).
+ */
 @Serializable
-enum class TextFont { SANS, SERIF, MONO }
+enum class TextFont { SANS, SERIF, MONO, MANROPE, CURSIVE, CASUAL, CONDENSED }
 
 /**
  * Look of a text clip. Sizes and positions are RELATIVE to the output frame so
@@ -35,10 +39,18 @@ data class TextStyle(
     val positionX: Float = 0.5f,
     /** How the text appears and disappears. */
     val animation: TextAnimation = TextAnimation.NONE,
+    /** Outline around the letters. */
+    val stroke: Boolean = false,
+    /** ARGB outline color. */
+    val strokeColor: Int = 0xFF111214.toInt(),
+    /** Outline thickness as a fraction of the font size. */
+    val strokeWidth: Float = 0.12f,
 ) {
     companion object {
         const val MIN_SIZE = 0.03f
         const val MAX_SIZE = 0.16f
+        const val MIN_STROKE = 0.04f
+        const val MAX_STROKE = 0.25f
     }
 }
 
