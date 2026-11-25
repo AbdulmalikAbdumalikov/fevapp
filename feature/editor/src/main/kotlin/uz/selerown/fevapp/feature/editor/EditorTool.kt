@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.OpenWith
 import androidx.compose.material.icons.rounded.PictureInPicture
 import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFields
@@ -61,6 +62,7 @@ enum class EditorTool(
     MOVE_LEFT(R.string.tool_move_left, Icons.AutoMirrored.Rounded.KeyboardArrowLeft, false),
     MOVE_RIGHT(R.string.tool_move_right, Icons.AutoMirrored.Rounded.KeyboardArrowRight, false),
     VOLUME(R.string.tool_volume, Icons.AutoMirrored.Rounded.VolumeUp, true),
+    VOICE(R.string.tool_voice, Icons.Rounded.RecordVoiceOver, true),
     EXTRACT_AUDIO(R.string.tool_extract_audio, Icons.Rounded.GraphicEq, false),
     CLIP_SPEED(R.string.tool_speed, Icons.Rounded.Speed, true),
     CLIP_FILTER(R.string.tool_filter, Icons.Rounded.Filter, true),
@@ -84,11 +86,11 @@ enum class EditorTool(
         val mainTools = listOf(ADD_MEDIA, EDIT, AUDIO, TEXT, OVERLAY, FILTER, SPEED, CAPTIONS, FORMAT)
 
         /** Move left/right are the visible alternative to long-press dragging. */
-        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, CROP, FREEZE, REPLACE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)
+        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, CROP, FREEZE, REPLACE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, VOICE, EXTRACT_AUDIO, REVERSE)
 
         val textTools = listOf(TEXT_EDIT, KEYFRAME, DUPLICATE, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
-        val audioTools = listOf(AUDIO_MIX, SPLIT, DELETE, MOVE_HERE, START_HERE, END_HERE)
+        val audioTools = listOf(AUDIO_MIX, VOICE, SPLIT, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
         val overlayTools = listOf(OVERLAY_TRANSFORM, KEYFRAME, DELETE, MOVE_HERE, START_HERE, END_HERE)
 

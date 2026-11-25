@@ -22,6 +22,10 @@ import uz.selerown.fevapp.core.designsystem.component.FevSecondaryButton
 import uz.selerown.fevapp.core.designsystem.component.FevToolSheet
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.AudioClip
+import uz.selerown.fevapp.core.model.VoiceEffect
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.runtime.mutableStateOf
 import kotlin.math.roundToInt
 
 /** "Audio" tool: add music from the device or the sound of a video. */
@@ -121,5 +125,40 @@ private fun LabeledSlider(@StringRes label: Int, valueText: String, value: Float
             valueRange = 0f..max,
             colors = SliderDefaults.colors(thumbColor = c.accent, activeTrackColor = c.accent),
         )
+    }
+}
+
+private val Voices = listOf(
+    VoiceEffect.NONE to R.string.voice_none,
+    VoiceEffect.HIGH to R.string.voice_high,
+    VoiceEffect.LOW to R.string.voice_low,
+    VoiceEffect.ROBOT to R.string.voice_robot,
+    VoiceEffect.ECHO to R.string.voice_echo,
+    VoiceEffect.RADIO to R.string.voice_radio,
+)
+
+/** Voice effect of the selected clip's sound. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun VoiceSheet(
+    current: VoiceEffect,
+    onDismiss: () -> Unit,
+    onApply: (VoiceEffect) -> Unit,
+) {
+    var voice by remember { mutableStateOf(current) }
+    SimpleSheet(R.string.tool_voice, onDismiss, onApply = { onApply(voice) }) {
+        Column(Modifier.padding(vertical = 8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Voices.forEach { (effect, label) ->
+                    ChoiceChip(stringResource(label), voice == effect) { voice = effect }
+                }
+            }
+            Text(
+                stringResource(R.string.voice_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = FevTheme.colors.textSecondary,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
     }
 }

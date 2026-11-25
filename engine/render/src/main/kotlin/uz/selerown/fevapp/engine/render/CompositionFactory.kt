@@ -113,7 +113,11 @@ internal object CompositionFactory {
             overlays += TimelineTextOverlay(visibleTexts, startUs, size.width, size.height)
         }
         if (overlays.isNotEmpty()) videoEffects += OverlayEffect(overlays)
-        val audioEffects = if (clip.source.type == MediaType.VIDEO) listOfNotNull(AudioGain.constant(clip.volume)) else emptyList()
+        val audioEffects = if (clip.source.type == MediaType.VIDEO) {
+            listOfNotNull(AudioGain.constant(clip.volume)) + VoiceEffects.exportProcessors(clip.voice)
+        } else {
+            emptyList()
+        }
         return EditedMediaItem.Builder(TimelineMapper.toMediaItem(clip))
             .setEffects(Effects(audioEffects, videoEffects))
             .apply {
@@ -170,7 +174,7 @@ internal object CompositionFactory {
         }
         val item = EditedMediaItem.Builder(TimelineMapper.toMediaItem(visible))
             .setRemoveVideo(true)
-            .setEffects(Effects(listOfNotNull(AudioGain.forClip(visible)), emptyList()))
+            .setEffects(Effects(listOfNotNull(AudioGain.forClip(visible)) + VoiceEffects.exportProcessors(clip.voice), emptyList()))
             .build()
         return EditedMediaItemSequence.Builder(setOf(C.TRACK_TYPE_AUDIO))
             .apply { if (visible.startUs > 0) addGap(visible.startUs) }

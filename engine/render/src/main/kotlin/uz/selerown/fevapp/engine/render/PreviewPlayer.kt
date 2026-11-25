@@ -1,10 +1,16 @@
+@file:OptIn(UnstableApi::class)
+
 package uz.selerown.fevapp.engine.render
 
 import android.content.Context
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +18,7 @@ import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.Project
+import uz.selerown.fevapp.core.model.VoiceEffect
 import kotlin.math.abs
 
 /**
@@ -24,7 +31,21 @@ import kotlin.math.abs
  */
 class PreviewPlayer(private val context: Context) {
 
-    val player: ExoPlayer = ExoPlayer.Builder(context).build()
+    /** Voice effect of the main-track clip being played (read by the audio processor). */
+    @Volatile private var currentVoice: VoiceEffect = VoiceEffect.NONE
+
+    val player: ExoPlayer = ExoPlayer.Builder(context, voiceRenderers { currentVoice }).build()
+
+    /** Player renderers whose audio goes through [VoiceEffectProcessor] (same effect code as export). */
+    private fun voiceRenderers(effect: () -> VoiceEffect) = object : DefaultRenderersFactory(context) {
+        override fun buildAudioSink(
+            context: Context,
+            enableFloatOutput: Boolean,
+            enableAudioOutputPlaybackParams: Boolean,
+        ): AudioSink = DefaultAudioSink.Builder(context)
+            .setAudioProcessors(arrayOf(VoiceEffectProcessor(effect)))
+            .build()
+    }
 
     /**
      * Color matrix (android.graphics.ColorMatrix layout) of the clip being
@@ -153,7 +174,11 @@ class PreviewPlayer(private val context: Context) {
         _frameClip.value = clip
         player.volume = if (muted) 0f else clip?.volume ?: 1f
         val speed = clip?.speed ?: 1f
-        if (player.playbackParameters.speed != speed) player.playbackParameters = PlaybackParameters(speed)
+        currentVoice = clip?.voice ?: VoiceEffect.NONE
+        val pitch = currentVoice.pitch
+        if (player.playbackParameters.speed != speed || player.playbackParameters.pitch != pitch) {
+            player.playbackParameters = PlaybackParameters(speed, pitch)
+        }
         // Colors: clip look/adjust + transition fade near cuts (quantized to limit redraws).
         val fade = if (styleOverride == null) ColorMath.fadeAt(clips, _positionUs.value) else null
         val fadeKey = fade?.let { it.first to (it.second * 20).toInt() }
@@ -167,7 +192,9 @@ class PreviewPlayer(private val context: Context) {
 
     // ---- Audio lane -------------------------------------------------------
 
-    private class LanePlayer(var clip: AudioClip, val exo: ExoPlayer)
+    private class LanePlayer(var clip: AudioClip) {
+        lateinit var exo: ExoPlayer
+    }
 
     private fun updateLanePlayers(audio: List<AudioClip>) {
         val ids = audio.map { it.id }.toSet()
@@ -175,7 +202,11 @@ class PreviewPlayer(private val context: Context) {
         audio.forEach { clip ->
             val existing = lanePlayers[clip.id]
             when {
-                existing == null -> lanePlayers[clip.id] = LanePlayer(clip, createLanePlayer(clip))
+                existing == null -> {
+                    val lane = LanePlayer(clip)
+                    lane.exo = createLanePlayer(clip) { lane.clip.voice }
+                    lanePlayers[clip.id] = lane
+                }
                 existing.clip.sameSound(clip) -> existing.clip = clip // only volume/position changed
                 else -> {
                     existing.clip = clip
@@ -187,7 +218,8 @@ class PreviewPlayer(private val context: Context) {
         }
     }
 
-    private fun createLanePlayer(clip: AudioClip): ExoPlayer = ExoPlayer.Builder(context).build().apply {
+    private fun createLanePlayer(clip: AudioClip, voice: () -> VoiceEffect): ExoPlayer =
+        ExoPlayer.Builder(context, voiceRenderers(voice)).build().apply {
         // Sound only: never decode the picture of a video source.
         trackSelectionParameters = trackSelectionParameters.buildUpon()
             .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)
@@ -217,6 +249,8 @@ class PreviewPlayer(private val context: Context) {
                 exo.seekTo(targetMs)
             }
             exo.volume = if (muted) 0f else clip.gainAt(offsetUs)
+            val pitch = clip.voice.pitch
+            if (exo.playbackParameters.pitch != pitch) exo.playbackParameters = PlaybackParameters(1f, pitch)
         }
     }
 

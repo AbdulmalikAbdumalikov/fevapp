@@ -32,6 +32,7 @@ import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
 import uz.selerown.fevapp.core.model.TransitionType
+import uz.selerown.fevapp.core.model.VoiceEffect
 import uz.selerown.fevapp.engine.render.MediaImporter
 import uz.selerown.fevapp.engine.render.PreviewPlayer
 import uz.selerown.fevapp.engine.render.VoiceRecorder
@@ -62,7 +63,9 @@ import uz.selerown.fevapp.engine.timeline.SetAudioMixCommand
 import uz.selerown.fevapp.engine.timeline.SetCanvasCommand
 import uz.selerown.fevapp.engine.timeline.FreezeFrameCommand
 import uz.selerown.fevapp.engine.timeline.ReplaceClipCommand
+import uz.selerown.fevapp.engine.timeline.SetAudioVoiceCommand
 import uz.selerown.fevapp.engine.timeline.SetClipColorCommand
+import uz.selerown.fevapp.engine.timeline.SetClipVoiceCommand
 import uz.selerown.fevapp.engine.timeline.SetClipTransformCommand
 import uz.selerown.fevapp.engine.timeline.SetClipSpeedCommand
 import uz.selerown.fevapp.engine.timeline.SetClipVolumeCommand
@@ -558,6 +561,21 @@ class EditorViewModel @Inject constructor(
             return
         }
         execute(SetTransitionCommand(if (applyToAll) null else id ?: return, type, durationUs))
+    }
+
+    /** Voice effect for the selected video clip or audio clip. */
+    fun setVoice(effect: VoiceEffect) {
+        closeTool()
+        val sel = _state.value.selection ?: return
+        when (sel.lane) {
+            Lane.MAIN -> {
+                val clip = current?.mainTrack?.clips?.firstOrNull { it.id == sel.id } ?: return
+                if (clip.source.type != MediaType.VIDEO) message(R.string.msg_voice_photo)
+                else execute(SetClipVoiceCommand(sel.id, effect))
+            }
+            Lane.AUDIO -> execute(SetAudioVoiceCommand(sel.id, effect))
+            else -> Unit
+        }
     }
 
     fun setClipVolume(volume: Float) {

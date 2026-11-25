@@ -91,6 +91,8 @@ data class AudioClip(
     val volume: Float = 1f,
     val fadeInUs: Long = 0L,
     val fadeOutUs: Long = 0L,
+    /** Voice effect (useful for voice-overs). */
+    val voice: VoiceEffect = VoiceEffect.NONE,
 ) {
     val durationUs: Long
         get() = trimEndUs - trimStartUs

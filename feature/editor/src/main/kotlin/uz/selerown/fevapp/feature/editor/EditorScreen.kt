@@ -248,6 +248,7 @@ internal fun EditorScreen(
             onSetOverlayTransform = viewModel::setOverlayTransform,
             onPreviewTransform = viewModel::previewTransform,
             onSetTransform = viewModel::setClipTransform,
+            onSetVoice = viewModel::setVoice,
             positionUs = positionState.value,
             onSaveKeyframe = viewModel::saveKeyframe,
             onDeleteKeyframe = viewModel::deleteKeyframeHere,

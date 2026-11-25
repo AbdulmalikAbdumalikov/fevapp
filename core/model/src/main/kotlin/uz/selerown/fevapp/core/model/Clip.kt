@@ -26,6 +26,8 @@ data class Clip(
     val transitionUs: Long = DEFAULT_TRANSITION_US,
     /** Crop, rotation and mirror of the picture. */
     val transform: ClipTransform = ClipTransform(),
+    /** Voice effect on the clip's own sound. */
+    val voice: VoiceEffect = VoiceEffect.NONE,
 ) {
     /** Width of the picture after crop and rotation (pixels of the source). */
     val displayWidth: Int
@@ -131,4 +133,15 @@ data class ClipTransform(
         /** Smallest crop window side (fraction of the source). */
         const val MIN_SIZE = 0.1f
     }
+}
+
+/** Original, offline voice effects (pitch, robot, echo, radio). */
+@Serializable
+enum class VoiceEffect(val pitch: Float) {
+    NONE(1f),
+    HIGH(1.45f),
+    LOW(0.72f),
+    ROBOT(1f),
+    ECHO(1f),
+    RADIO(1f),
 }

@@ -5,6 +5,7 @@ import uz.selerown.fevapp.core.model.MediaSource
 import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
+import uz.selerown.fevapp.core.model.VoiceEffect
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -120,5 +121,18 @@ class LaneCommandsTest {
         assertSame(base, SetClipVolumeCommand("a", 3f).apply(base)) // clamps to 1 = current
         val quiet = SetClipVolumeCommand("a", 0.3f).apply(base)
         assertEquals(0.3f, quiet.mainTrack.clips[0].volume)
+    }
+
+    @Test
+    fun `voice effects apply to video clips and audio clips only`() {
+        val p = SetClipVoiceCommand("a", VoiceEffect.ROBOT).apply(sampleProject())
+        assertEquals(VoiceEffect.ROBOT, p.mainTrack.clips[0].voice)
+        val photo = sampleProject().updateMainTrack { t ->
+            t.copy(clips = t.clips.mapIndexed { i, c -> if (i == 0) c.copy(source = c.source.copy(type = MediaType.IMAGE)) else c })
+        }
+        assertSame(photo, SetClipVoiceCommand("a", VoiceEffect.ECHO).apply(photo))
+        val audio = SetAudioVoiceCommand("m", VoiceEffect.HIGH).apply(withSong()).audioClips.single()
+        assertEquals(VoiceEffect.HIGH, audio.voice)
+        assertEquals(1.45f, audio.voice.pitch)
     }
 }

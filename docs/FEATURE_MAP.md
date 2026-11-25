@@ -58,7 +58,7 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 | Ovoz yozish (voice-over) | ✅ | — | |
 | Ovoz balandligi, fade, bo'lish, to'lqin shakli | ✅ | — | |
 | Ritm belgilari (beats) | ⬜ | O' | Oflayn onset aniqlash, timeline'da nuqtalar |
-| Ovoz o'zgartirgich (pitch, robot va h.k.) | ⬜ | O' | Media3 `SonicAudioProcessor` + effektlar |
+| Ovoz o'zgartirgich | ✅ | — | Ingichka, Yo'g'on, Robot, Aks-sado, Radio — video va audio kliplar uchun |
 | Shovqinni kamaytirish | ⬜ | Q | 4-bosqich: RNNoise |
 | Audio tezligi | ⬜ | O | Klip tezligi kabi |
 | Ovoz effektlari kutubxonasi | ⬜ | O' | Faqat o'zimiz yozgan/erkin litsenziyali tovushlar |
@@ -118,7 +118,7 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 2. ✅ Kadrni muzlatish va klipni almashtirish
 3. ✅ Matn konturi + shriftlar (yana animatsiyalar — keyin)
 4. **Klip kirish/chiqish animatsiyalari** va **asosiy klip zoom keyframe'lari**
-5. **Ovoz o'zgartirgich** va **audio tezligi**
+5. ✅ Ovoz o'zgartirgich (audio tezligi — keyin)
 6. **Chroma key** va **niqob**
 7. **Crossfade o'tishlar**
 8. 4-bosqich (oflayn AI): subtitr, fonni olib tashlash, shovqinni kamaytirish

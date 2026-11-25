@@ -6,6 +6,7 @@ import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
+import uz.selerown.fevapp.core.model.VoiceEffect
 
 /*
  * Commands for the text and audio lanes, plus clip volume / extract audio.
@@ -201,6 +202,31 @@ class ExtractAudioCommand(
         )
         return SetClipVolumeCommand(clipId, 0f).apply(project).copy(audioClips = project.audioClips + audio)
     }
+}
+
+// ---- Voice effects ----------------------------------------------------------
+
+/** Voice effect on a main-track VIDEO clip's own sound (photos have no sound). */
+class SetClipVoiceCommand(
+    private val clipId: String,
+    private val voice: VoiceEffect,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val index = project.mainTrack.indexOf(clipId)
+        if (index < 0) return project
+        val clip = project.mainTrack.clips[index]
+        if (clip.source.type != MediaType.VIDEO || clip.voice == voice) return project
+        return project.updateMainTrack { t ->
+            t.copy(clips = t.clips.toMutableList().apply { set(index, clip.copy(voice = voice)) })
+        }
+    }
+}
+
+class SetAudioVoiceCommand(
+    private val clipId: String,
+    private val voice: VoiceEffect,
+) : TimelineCommand {
+    override fun apply(project: Project): Project = project.updateAudio(clipId) { it.copy(voice = voice) }
 }
 
 // ---- Helpers ----------------------------------------------------------------

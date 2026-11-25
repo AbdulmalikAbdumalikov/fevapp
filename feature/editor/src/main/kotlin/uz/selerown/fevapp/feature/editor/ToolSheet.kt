@@ -26,6 +26,7 @@ import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.KeyframeMath
 import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.TextStyle
+import uz.selerown.fevapp.core.model.VoiceEffect
 import uz.selerown.fevapp.core.model.stateAt
 import uz.selerown.fevapp.core.model.TransitionType
 
@@ -53,6 +54,7 @@ internal fun ToolSheet(
     onSetOverlayTransform: (Float, Float, Float) -> Unit,
     onPreviewTransform: (ClipTransform) -> Unit,
     onSetTransform: (ClipTransform) -> Unit,
+    onSetVoice: (VoiceEffect) -> Unit,
     positionUs: Long,
     onSaveKeyframe: (x: Float, y: Float, scale: Float, alpha: Float) -> Unit,
     onDeleteKeyframe: () -> Unit,
@@ -104,6 +106,10 @@ internal fun ToolSheet(
         }
         EditorTool.CROP -> selectedClip?.let { CropSheet(it, onPreviewTransform, onDismiss, onSetTransform) }
             ?: LaunchedEffect(Unit) { onDismiss() }
+        EditorTool.VOICE -> {
+            val voice = selectedClip?.voice ?: project?.audioClips?.firstOrNull { it.id == selectedId }?.voice
+            if (voice != null) VoiceSheet(voice, onDismiss, onSetVoice) else LaunchedEffect(Unit) { onDismiss() }
+        }
         EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound, onRecordVoice)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
             ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)
