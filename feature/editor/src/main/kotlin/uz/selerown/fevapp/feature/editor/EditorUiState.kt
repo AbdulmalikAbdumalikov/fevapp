@@ -44,8 +44,11 @@ data class EditorUiState(
         get() = selection?.takeIf { it.lane == Lane.MAIN }?.id
 }
 
-/** Text being dragged on the preview: new center as fractions of the frame. */
-data class TextDraft(val id: String, val x: Float, val y: Float)
+/**
+ * Text or overlay being moved/resized on the preview: new center (fractions of
+ * the frame) and size (text: sizeFraction, overlay: scale).
+ */
+data class TextDraft(val id: String, val x: Float, val y: Float, val size: Float)
 
 /** A voice-over in progress: where it will be placed and when it started (wall clock). */
 data class Recording(val startUs: Long, val startedAtMillis: Long)

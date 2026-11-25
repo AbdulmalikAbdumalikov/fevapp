@@ -293,17 +293,19 @@ class EditorViewModel @Inject constructor(
         if (execute(AddTextCommand(clip))) select(Selection(Lane.TEXT, clip.id))
     }
 
-    /** Live drag of a text on the preview (x, y = center as 0..1 of the frame). */
-    fun onTextDrag(id: String, x: Float, y: Float) {
+    /** Live move/resize of a text on the preview (one undo step on release). */
+    fun onTextTransform(id: String, x: Float, y: Float, size: Float) {
         preview.pause()
-        _state.update { it.copy(textDraft = TextDraft(id, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))) }
+        val fixed = size.coerceIn(TextStyle.MIN_SIZE, TextStyle.MAX_SIZE)
+        _state.update { it.copy(textDraft = TextDraft(id, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f), fixed)) }
     }
 
-    fun onTextDragEnd() {
+    fun onTextTransformEnd() {
         val draft = _state.value.textDraft ?: return
         _state.update { it.copy(textDraft = null) }
         val clip = current?.textClips?.firstOrNull { it.id == draft.id } ?: return
-        execute(UpdateTextCommand(clip.id, clip.text, clip.style.copy(positionX = draft.x, positionY = draft.y)))
+        val style = clip.style.copy(positionX = draft.x, positionY = draft.y, sizeFraction = draft.size)
+        execute(UpdateTextCommand(clip.id, clip.text, style))
     }
 
     // ---- Overlays (picture-in-picture) -----------------------------------
@@ -336,17 +338,17 @@ class EditorViewModel @Inject constructor(
         execute(SetOverlayTransformCommand(id, centerX, centerY, scale))
     }
 
-    /** Live drag of an overlay on the preview (center as 0..1 of the frame). */
-    fun onOverlayDrag(id: String, x: Float, y: Float) {
+    /** Live move/resize of an overlay on the preview (one undo step on release). */
+    fun onOverlayTransform(id: String, x: Float, y: Float, scale: Float) {
         preview.pause()
-        _state.update { it.copy(overlayDraft = TextDraft(id, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f))) }
+        val fixed = scale.coerceIn(OverlayClip.MIN_SCALE, OverlayClip.MAX_SCALE)
+        _state.update { it.copy(overlayDraft = TextDraft(id, x.coerceIn(0f, 1f), y.coerceIn(0f, 1f), fixed)) }
     }
 
-    fun onOverlayDragEnd() {
+    fun onOverlayTransformEnd() {
         val draft = _state.value.overlayDraft ?: return
         _state.update { it.copy(overlayDraft = null) }
-        val clip = current?.overlayClips?.firstOrNull { it.id == draft.id } ?: return
-        execute(SetOverlayTransformCommand(clip.id, draft.x, draft.y, clip.scale))
+        execute(SetOverlayTransformCommand(draft.id, draft.x, draft.y, draft.size))
     }
 
     // ---- Audio ----------------------------------------------------------

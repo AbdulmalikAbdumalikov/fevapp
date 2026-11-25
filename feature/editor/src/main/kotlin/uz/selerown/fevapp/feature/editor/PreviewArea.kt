@@ -10,6 +10,12 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import uz.selerown.fevapp.core.model.OverlayClip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalDensity
@@ -63,13 +69,14 @@ internal fun PreviewArea(
     colorMatrix: FloatArray?,
     selectedTextId: String?,
     textDraft: TextDraft?,
-    onTextDrag: (id: String, x: Float, y: Float) -> Unit,
-    onTextDragEnd: () -> Unit,
+    onTextTransform: (id: String, x: Float, y: Float, size: Float) -> Unit,
+    onTextTransformEnd: () -> Unit,
     overlayPlayers: Map<String, Player>,
     selectedOverlayId: String?,
     overlayDraft: TextDraft?,
-    onOverlayDrag: (id: String, x: Float, y: Float) -> Unit,
-    onOverlayDragEnd: () -> Unit,
+    onOverlayTransform: (id: String, x: Float, y: Float, scale: Float) -> Unit,
+    onOverlayTransformEnd: () -> Unit,
+    onSelectElement: (Selection) -> Unit,
     isPlaying: Boolean,
     fullscreen: Boolean,
     onTogglePlay: () -> Unit,
@@ -108,13 +115,14 @@ internal fun PreviewArea(
                 )
             },
             onRelease = { it.player = null },
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onTogglePlay,
-                ),
+            modifier = Modifier.fillMaxSize(),
+        )
+        // Same order as the export: text, then picture-in-picture above it.
+        TextLayer(
+            project = project,
+            position = positionUs,
+            draft = textDraft,
+            modifier = Modifier.fillMaxSize(),
         )
         OverlayLayer(
             project = project,
@@ -122,18 +130,18 @@ internal fun PreviewArea(
             players = overlayPlayers,
             selectedId = selectedOverlayId,
             draft = overlayDraft,
-            onDrag = onOverlayDrag,
-            onDragEnd = onOverlayDragEnd,
         )
-        TextLayer(
+        ElementGestures(
             project = project,
             position = positionUs,
             selectedTextId = selectedTextId,
-            draft = textDraft,
-            onDrag = onTextDrag,
-            onDragEnd = onTextDragEnd,
-            onTap = onTogglePlay,
-            modifier = Modifier.fillMaxSize(),
+            selectedOverlayId = selectedOverlayId,
+            onSelect = onSelectElement,
+            onTogglePlay = onTogglePlay,
+            onTextTransform = onTextTransform,
+            onTextTransformEnd = onTextTransformEnd,
+            onOverlayTransform = onOverlayTransform,
+            onOverlayTransformEnd = onOverlayTransformEnd,
         )
         }
         if (fullscreen) {
@@ -163,57 +171,27 @@ internal fun PreviewArea(
 private fun TextLayer(
     project: Project,
     position: () -> Long,
-    selectedTextId: String?,
     draft: TextDraft?,
-    onDrag: (String, Float, Float) -> Unit,
-    onDragEnd: () -> Unit,
-    onTap: () -> Unit,
     modifier: Modifier,
 ) {
     val positionUs = position()
     val visible = project.textClips
         .filter { it.isVisibleAt(positionUs) }
         .map { clip ->
-            if (draft?.id == clip.id) clip.copy(style = clip.style.copy(positionX = draft.x, positionY = draft.y)) else clip
+            if (draft?.id == clip.id) {
+                clip.copy(style = clip.style.copy(positionX = draft.x, positionY = draft.y, sizeFraction = draft.size))
+            } else {
+                clip
+            }
         }
     if (visible.isEmpty()) return
-    // A selected, visible text can be dragged with a finger (buttons in its sheet do the same).
-    val draggable = visible.firstOrNull { it.id == selectedTextId }
-    val latest by rememberUpdatedState(draggable)
-    val drag by rememberUpdatedState(onDrag)
-    val dragEnd by rememberUpdatedState(onDragEnd)
-    val tap by rememberUpdatedState(onTap)
     val (rw, rh) = project.frameRatio()
     val ratio = rw.toFloat() / rh
     BoxWithConstraints(modifier) {
         val fitsWidth = ratio > maxWidth / maxHeight
         val width = if (fitsWidth) maxWidth else maxHeight * ratio
         val height = if (fitsWidth) maxWidth / ratio else maxHeight
-        val gestures = if (draggable == null) {
-            Modifier
-        } else {
-            Modifier
-                .pointerInput(Unit) { detectTapGestures { tap() } }
-                .pointerInput(Unit) {
-                    var x = 0f
-                    var y = 0f
-                    detectDragGestures(
-                        onDragStart = {
-                            latest?.style?.let { x = it.positionX; y = it.positionY }
-                        },
-                        onDrag = { change, amount ->
-                            change.consume()
-                            val clip = latest ?: return@detectDragGestures
-                            x = (x + amount.x / size.width).coerceIn(0f, 1f)
-                            y = (y + amount.y / size.height).coerceIn(0f, 1f)
-                            drag(clip.id, x, y)
-                        },
-                        onDragEnd = { dragEnd() },
-                        onDragCancel = { dragEnd() },
-                    )
-                }
-        }
-        Canvas(Modifier.align(Alignment.Center).size(width, height).then(gestures)) {
+        Canvas(Modifier.align(Alignment.Center).size(width, height)) {
             drawIntoCanvas { TextRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), visible, positionUs) }
         }
     }
@@ -231,8 +209,6 @@ private fun BoxScope.OverlayLayer(
     players: Map<String, Player>,
     selectedId: String?,
     draft: TextDraft?,
-    onDrag: (String, Float, Float) -> Unit,
-    onDragEnd: () -> Unit,
 ) {
     val c = FevTheme.colors
     val density = LocalDensity.current
@@ -240,44 +216,16 @@ private fun BoxScope.OverlayLayer(
     BoxWithConstraints(Modifier.matchParentSize()) {
         val frameW = constraints.maxWidth.toFloat()
         val frameH = constraints.maxHeight.toFloat()
-        project.overlayClips.filter { it.isVisibleAt(positionUs) || it.id == selectedId && draft?.id == it.id }.forEach { clip ->
+        project.overlayClips.filter { it.isVisibleAt(positionUs) || draft?.id == it.id }.forEach { clip ->
             val player = players[clip.id] ?: return@forEach
-            val cx = if (draft?.id == clip.id) draft.x else clip.centerX
-            val cy = if (draft?.id == clip.id) draft.y else clip.centerY
-            val wPx = frameW * clip.scale
-            val aspect = clip.source.height.toFloat().coerceAtLeast(1f) / clip.source.width.toFloat().coerceAtLeast(1f)
-            val hPx = wPx * aspect
+            val shown = if (draft?.id == clip.id) clip.copy(centerX = draft.x, centerY = draft.y, scale = draft.size) else clip
+            val rect = overlayRect(shown, frameW, frameH)
             key(clip.id) {
-                val latestClip by rememberUpdatedState(clip)
-                val drag by rememberUpdatedState(onDrag)
-                val end by rememberUpdatedState(onDragEnd)
-                val selected = clip.id == selectedId
                 Box(
                     Modifier
-                        .offset { IntOffset((cx * frameW - wPx / 2).roundToInt(), (cy * frameH - hPx / 2).roundToInt()) }
-                        .size(with(density) { wPx.toDp() }, with(density) { hPx.toDp() })
-                        .then(if (selected) Modifier.border(2.dp, c.accent) else Modifier)
-                        .then(
-                            if (!selected) {
-                                Modifier
-                            } else {
-                                Modifier.pointerInput(clip.id) {
-                                    var x = 0f
-                                    var y = 0f
-                                    detectDragGestures(
-                                        onDragStart = { x = latestClip.centerX; y = latestClip.centerY },
-                                        onDrag = { change, amount ->
-                                            change.consume()
-                                            x = (x + amount.x / frameW).coerceIn(0f, 1f)
-                                            y = (y + amount.y / frameH).coerceIn(0f, 1f)
-                                            drag(latestClip.id, x, y)
-                                        },
-                                        onDragEnd = { end() },
-                                        onDragCancel = { end() },
-                                    )
-                                }
-                            },
-                        ),
+                        .offset { IntOffset(rect.left.roundToInt(), rect.top.roundToInt()) }
+                        .size(with(density) { rect.width().toDp() }, with(density) { rect.height().toDp() })
+                        .then(if (clip.id == selectedId) Modifier.border(2.dp, c.accent) else Modifier),
                 ) {
                     AndroidView(
                         factory = { ctx ->
@@ -297,4 +245,117 @@ private fun BoxScope.OverlayLayer(
             }
         }
     }
+}
+
+/** Overlay rectangle in frame pixels (same math as the export). */
+private fun overlayRect(clip: OverlayClip, frameW: Float, frameH: Float): android.graphics.RectF {
+    val w = frameW * clip.scale
+    val aspect = clip.source.height.toFloat().coerceAtLeast(1f) / clip.source.width.toFloat().coerceAtLeast(1f)
+    val h = w * aspect
+    val cx = clip.centerX * frameW
+    val cy = clip.centerY * frameH
+    return android.graphics.RectF(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+}
+
+/**
+ * Touch handling for everything drawn on the preview:
+ * - tap an overlay/text: select it; tap elsewhere: play/pause
+ * - one finger on an element: move it (it is selected at the same time)
+ * - two fingers: resize the element under them (or the selected one)
+ * Each gesture is one undo step. Sheets offer the same with sliders/chips.
+ */
+@Composable
+private fun ElementGestures(
+    project: Project,
+    position: () -> Long,
+    selectedTextId: String?,
+    selectedOverlayId: String?,
+    onSelect: (Selection) -> Unit,
+    onTogglePlay: () -> Unit,
+    onTextTransform: (String, Float, Float, Float) -> Unit,
+    onTextTransformEnd: () -> Unit,
+    onOverlayTransform: (String, Float, Float, Float) -> Unit,
+    onOverlayTransformEnd: () -> Unit,
+) {
+    val latestProject by rememberUpdatedState(project)
+    val selected by rememberUpdatedState(
+        selectedOverlayId?.let { Selection(Lane.OVERLAY, it) } ?: selectedTextId?.let { Selection(Lane.TEXT, it) },
+    )
+    val select by rememberUpdatedState(onSelect)
+    val toggle by rememberUpdatedState(onTogglePlay)
+    val textMove by rememberUpdatedState(onTextTransform)
+    val textEnd by rememberUpdatedState(onTextTransformEnd)
+    val overlayMove by rememberUpdatedState(onOverlayTransform)
+    val overlayEnd by rememberUpdatedState(onOverlayTransformEnd)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    val timeUs = position()
+                    val proj = latestProject
+                    val hit = hitTest(proj, timeUs, down.position.x, down.position.y, w, h)
+                    var target = hit
+                    var x = 0f
+                    var y = 0f
+                    var s = 0f
+                    fun loadTarget(sel: Selection?) {
+                        when (sel?.lane) {
+                            Lane.TEXT -> proj.textClips.firstOrNull { it.id == sel.id }?.let {
+                                x = it.style.positionX; y = it.style.positionY; s = it.style.sizeFraction
+                            }
+                            Lane.OVERLAY -> proj.overlayClips.firstOrNull { it.id == sel.id }?.let {
+                                x = it.centerX; y = it.centerY; s = it.scale
+                            }
+                            else -> Unit
+                        }
+                    }
+                    loadTarget(target)
+                    var moved = false
+                    var totalPan = Offset.Zero
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val pressed = event.changes.filter { it.pressed }
+                        if (pressed.isEmpty()) break
+                        if (target == null && pressed.size >= 2) {
+                            target = selected // pinch anywhere resizes the selected element
+                            loadTarget(target)
+                        }
+                        val t = target ?: continue
+                        val pan = event.calculatePan()
+                        val zoom = event.calculateZoom()
+                        totalPan += pan
+                        if (!moved && (totalPan.getDistance() > viewConfiguration.touchSlop || zoom != 1f)) {
+                            moved = true
+                            if (t != selected) select(t)
+                        }
+                        if (!moved) continue
+                        x = (x + pan.x / w).coerceIn(0f, 1f)
+                        y = (y + pan.y / h).coerceIn(0f, 1f)
+                        s *= zoom
+                        if (t.lane == Lane.TEXT) textMove(t.id, x, y, s) else overlayMove(t.id, x, y, s)
+                        event.changes.forEach { it.consume() }
+                    }
+                    when {
+                        moved && target?.lane == Lane.TEXT -> textEnd()
+                        moved && target?.lane == Lane.OVERLAY -> overlayEnd()
+                        hit != null -> select(hit)
+                        else -> toggle()
+                    }
+                }
+            },
+    )
+}
+
+/** Topmost element under (px, py): overlays (drawn last) before texts. */
+private fun hitTest(project: Project, timeUs: Long, px: Float, py: Float, w: Float, h: Float): Selection? {
+    project.overlayClips.asReversed().firstOrNull { it.isVisibleAt(timeUs) && overlayRect(it, w, h).contains(px, py) }
+        ?.let { return Selection(Lane.OVERLAY, it.id) }
+    project.textClips.asReversed().firstOrNull {
+        it.isVisibleAt(timeUs) && TextRenderer.bounds(it, w.toInt(), h.toInt()).contains(px, py)
+    }?.let { return Selection(Lane.TEXT, it.id) }
+    return null
 }

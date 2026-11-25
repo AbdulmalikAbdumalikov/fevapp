@@ -109,6 +109,29 @@ object TextRenderer {
         canvas.restore()
     }
 
+    /**
+     * Where [clip] is drawn in a [width]×[height] frame (without animation),
+     * used to hit-test taps on the preview.
+     */
+    fun bounds(clip: TextClip, width: Int, height: Int): RectF {
+        val style = clip.style
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = style.sizeFraction * min(width, height)
+            typeface = typeface(style.font, style.bold)
+        }
+        val layoutWidth = (width * MAX_WIDTH).toInt().coerceAtLeast(1)
+        val layout = StaticLayout.Builder.obtain(clip.text, 0, clip.text.length, paint, layoutWidth)
+            .setAlignment(Layout.Alignment.ALIGN_CENTER)
+            .setIncludePad(false)
+            .build()
+        val contentWidth = (0 until layout.lineCount).maxOf { layout.getLineWidth(it) }
+        val pad = paint.textSize * 0.3f
+        val halfWidth = contentWidth / 2f + pad
+        val centerX = if (halfWidth * 2 >= width) width / 2f else (style.positionX * width).coerceIn(halfWidth, width - halfWidth)
+        val top = (style.positionY * height - layout.height / 2f).coerceIn(0f, (height - layout.height).coerceAtLeast(0).toFloat())
+        return RectF(centerX - halfWidth, top - pad, centerX + halfWidth, top + layout.height + pad)
+    }
+
     private fun typeface(font: TextFont, bold: Boolean): Typeface {
         val family = when (font) {
             TextFont.SANS -> Typeface.SANS_SERIF
