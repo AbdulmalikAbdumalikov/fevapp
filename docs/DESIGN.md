@@ -62,10 +62,11 @@
 4. Timeline: ruler · main video track (thumbnails, "+" at the end) · text lane · audio lane;
    **fixed center playhead**, content scrolls under it
 5. Bottom tool bar (horizontal scroll):
-   - nothing selected: Kesish, Audio, Matn, Filtr, Tezlik, Subtitr, Format
+   - nothing selected: Kesish, Audio, Matn, Ustki qatlam, Filtr, Tezlik, Subtitr, Format
    - clip selected: Boʻlish, Oʻchirish, Nusxa, Chapga, Oʻngga, Tezlik, Filtr, Oʻtish, Ovoz, Ovozni ajratish, Teskari
    - text selected: Tahrirlash, Nusxa, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
    - audio selected: Ovoz, Boʻlish, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
+   - overlay selected: Joylashuv, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
      (the last three are the button alternatives to dragging and trimming)
 6. Tool panels open as bottom sheets with **✕** (close) and **✓** (apply).
 
@@ -75,6 +76,9 @@
   TextureView. Media3 GL video effects in ExoPlayer froze playback on the emulator, so they are used
   only in export (same matrix → same result).
 - Text is drawn by `TextRenderer` in both preview and export.
+- Overlays: preview = one small synced ExoPlayer per overlay; export = one video sequence per overlay.
+  Media3's compositor draws input 0 on top, so overlay sequences are placed before the main track.
+  Overlays are drawn above text in both preview and export.
 
 ## Language
 

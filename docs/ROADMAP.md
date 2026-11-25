@@ -14,10 +14,11 @@ Fevapp stays **free and offline** in every phase.
 
 - ✅ **Text**: text clips on the text lane, styles (size, color, box, bold, font family, position)
 - ✅ Text in/out animations (fade, pop, slide up)
-- ⬜ Text: bundled fonts, free drag on the preview
+- ✅ Text: free drag on the preview
+- ⬜ Text: bundled fonts
 - ✅ **Audio**: music from device, sound from a video, per-clip volume, fade in/out, extract audio
 - ✅ Audio: voice-over recording (RECORD_AUDIO, still offline)
-- ⬜ Audio: waveform on the lane
+- ✅ Audio: waveform on the lane
 - ✅ **Speed**: constant speed (0.25×–4×)
 - ⬜ Speed curves
 - ✅ **Filters & adjustments**: looks + brightness, contrast, saturation, warmth (one color matrix for preview and export)
@@ -28,10 +29,11 @@ Fevapp stays **free and offline** in every phase.
 ## Phase 3 — Advanced
 
 - Keyframes (position, scale, rotation, opacity, volume)
-- Overlays / picture-in-picture on the overlay track
+- ✅ Overlays / picture-in-picture on the overlay track (silent; sound from main track and audio lane)
 - Masks
 - Chroma key (green screen)
-- Canvas & background (blur, color) for every aspect ratio; preview letterboxing
+- ✅ Canvas background color + preview letterboxing
+- ⬜ Blurred background
 - Stickers (original, bundled)
 - Reverse clip
 

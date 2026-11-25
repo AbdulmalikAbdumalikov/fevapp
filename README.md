@@ -43,6 +43,15 @@ so English and Russian can be added later.
 - **Voice-over**: record from the microphone while the video plays muted; lands on the audio lane
 - **Background export**: a foreground service with a progress notification keeps exporting after you leave the app
 
+## What works (phase 3 — started)
+
+- **Overlay / picture-in-picture**: a video or photo on top of the main track; drag it on the preview
+  or use the Joylashuv sheet (position, size)
+- **Format background color** behind clips that do not fill the frame; the preview shows the real
+  output frame (letterbox) for every format
+- **Text**: drag it anywhere on the preview
+- **Audio waveforms** on audio-lane clips; overlapping lane clips get their own 48 dp rows
+
 ## Architecture
 
 ```
