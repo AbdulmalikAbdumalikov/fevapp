@@ -1,6 +1,6 @@
 # Fevapp roadmap
 
-Fevapp stays **free and offline** in every phase.
+Fevapp stays **free and offline** in every phase. Full comparison with popular editors: [FEATURE_MAP.md](FEATURE_MAP.md).
 
 ## Phase 1 — Foundation (done)
 
