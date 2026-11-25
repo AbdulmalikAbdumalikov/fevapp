@@ -78,6 +78,29 @@
     <string name="color_blue">Koʻk</string>
     <string name="color_pink">Pushti</string>
 
+    <!-- Speed sheet -->
+    <string name="speed_value">%1$s×</string>
+    <string name="speed_duration">Davomiylik: %1$s</string>
+    <string name="speed_hint">Tovush ohangi oʻzgarmaydi (ovoz ingichkalashib yoki yoʻgʻonlashib ketmaydi). Rasmlar uchun tezlik yoʻq — ularning uzunligini kesish bilan oʻzgartiring.</string>
+
+    <!-- Filter sheet -->
+    <string name="filter_looks">Tayyor koʻrinishlar</string>
+    <string name="filter_adjust">Sozlash</string>
+    <string name="filter_reset">Asliga qaytarish</string>
+    <string name="filter_apply_all">Hammasiga qoʻllash</string>
+    <string name="look_none">Asl</string>
+    <string name="look_mono">Oq-qora</string>
+    <string name="look_noir">Kontrast oq-qora</string>
+    <string name="look_warm">Iliq</string>
+    <string name="look_cool">Sovuq</string>
+    <string name="look_vivid">Yorqin</string>
+    <string name="look_faded">Xira</string>
+    <string name="adjust_brightness">Yorugʻlik</string>
+    <string name="adjust_contrast">Kontrast</string>
+    <string name="adjust_saturation">Toʻyinganlik</string>
+    <string name="adjust_warmth">Iliqlik</string>
+    <string name="value_signed_percent">%1$+d%%</string>
+
     <!-- Audio sheets -->
     <string name="audio_add_music">Qurilmadan musiqa</string>
     <string name="audio_add_from_video">Videodan ovoz</string>
@@ -100,6 +123,7 @@
     <string name="msg_project_missing">Loyiha topilmadi</string>
     <string name="msg_extract_failed">Bu klipda ajratib olinadigan ovoz yoʻq</string>
     <string name="msg_playhead_outside">Avval oʻynatgich chizigʻini kerakli joyga qoʻying</string>
+    <string name="msg_speed_photo">Rasm uchun tezlik yoʻq. Uzunligini kesish bilan oʻzgartiring.</string>
     <string name="msg_text_empty">Matn boʻsh boʻlmasligi kerak</string>
     <string name="msg_empty_export">Eksport uchun avval klip qoʻshing</string>
 </resources>

@@ -129,6 +129,20 @@ internal fun ClipItem(
                     .padding(horizontal = 4.dp),
             )
         }
+        if (clip.speed != 1f && widthPx >= reservedPx) {
+            // Speed badge (e.g. "2×") so changed clips are easy to spot.
+            Text(
+                "${if (clip.speed == clip.speed.toInt().toFloat()) clip.speed.toInt() else clip.speed}×",
+                style = MaterialTheme.typography.labelSmall,
+                color = c.onAccent,
+                maxLines = 1,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = if (selected) HandleWidth + 2.dp else 4.dp, top = 2.dp)
+                    .background(c.accent, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp),
+            )
+        }
         if (selected) {
             TrimHandle(clip, isStart = true, pxPerUs, onTrimDrag, onTrimEnd, stringResource(R.string.editor_trim_start))
             TrimHandle(clip, isStart = false, pxPerUs, onTrimDrag, onTrimEnd, stringResource(R.string.editor_trim_end))

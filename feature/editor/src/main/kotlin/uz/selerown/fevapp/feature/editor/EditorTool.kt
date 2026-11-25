@@ -36,8 +36,9 @@ enum class EditorTool(
     EDIT(R.string.tool_edit, Icons.Rounded.ContentCut, false),
     AUDIO(R.string.tool_audio, Icons.Rounded.MusicNote, true),
     TEXT(R.string.tool_text, Icons.Rounded.TextFields, true),
-    FILTER(R.string.tool_filter, Icons.Rounded.Filter, true),
-    SPEED(R.string.tool_speed, Icons.Rounded.Speed, true),
+    // Filter / speed with nothing selected act on the clip under the playhead.
+    FILTER(R.string.tool_filter, Icons.Rounded.Filter, false),
+    SPEED(R.string.tool_speed, Icons.Rounded.Speed, false),
     CAPTIONS(R.string.tool_captions, Icons.Rounded.ClosedCaption, true),
     FORMAT(R.string.tool_format, Icons.Rounded.AspectRatio, true),
 
@@ -52,6 +53,7 @@ enum class EditorTool(
     VOLUME(R.string.tool_volume, Icons.AutoMirrored.Rounded.VolumeUp, true),
     EXTRACT_AUDIO(R.string.tool_extract_audio, Icons.Rounded.GraphicEq, false),
     CLIP_SPEED(R.string.tool_speed, Icons.Rounded.Speed, true),
+    CLIP_FILTER(R.string.tool_filter, Icons.Rounded.Filter, true),
     REVERSE(R.string.tool_reverse, Icons.Rounded.FastRewind, true),
 
     // Text / audio lane item: button alternatives to dragging and trimming
@@ -66,7 +68,7 @@ enum class EditorTool(
         val mainTools = listOf(EDIT, AUDIO, TEXT, FILTER, SPEED, CAPTIONS, FORMAT)
 
         /** Move left/right are the visible alternative to long-press dragging. */
-        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, VOLUME, EXTRACT_AUDIO, CLIP_SPEED, REVERSE)
+        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, VOLUME, EXTRACT_AUDIO, REVERSE)
 
         val textTools = listOf(TEXT_EDIT, DUPLICATE, DELETE, MOVE_HERE, START_HERE, END_HERE)
 

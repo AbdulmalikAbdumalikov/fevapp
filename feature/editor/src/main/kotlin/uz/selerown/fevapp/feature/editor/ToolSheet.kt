@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import uz.selerown.fevapp.core.designsystem.component.FevToolSheet
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.CanvasFormat
+import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextStyle
 
@@ -37,7 +39,11 @@ internal fun ToolSheet(
     onPickVideoSound: () -> Unit,
     onSetClipVolume: (Float) -> Unit,
     onSetAudioMix: (volume: Float, fadeInUs: Long, fadeOutUs: Long) -> Unit,
+    onSetSpeed: (Float) -> Unit,
+    onPreviewColor: (ClipLook, ColorAdjust) -> Unit,
+    onSetColor: (ClipLook, ColorAdjust, Boolean) -> Unit,
 ) {
+    val selectedClip = project?.mainTrack?.clips?.firstOrNull { it.id == selection?.id }
     val selectedId = selection?.id
     when (tool) {
         EditorTool.TEXT -> TextSheet(null, stringResource(R.string.editor_add_text), onDismiss) { text, style ->
@@ -48,6 +54,10 @@ internal fun ToolSheet(
                 onSaveText(clip.id, text, style)
             }
         } ?: LaunchedEffect(Unit) { onDismiss() } // selection vanished (e.g. undo)
+        EditorTool.CLIP_SPEED -> selectedClip?.let { SpeedSheet(it, onDismiss, onSetSpeed) }
+            ?: LaunchedEffect(Unit) { onDismiss() }
+        EditorTool.CLIP_FILTER -> selectedClip?.let { FilterSheet(it, onPreviewColor, onDismiss, onSetColor) }
+            ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
             ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)

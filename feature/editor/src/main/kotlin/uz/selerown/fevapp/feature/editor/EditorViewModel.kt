@@ -21,6 +21,9 @@ import uz.selerown.fevapp.core.common.IdGenerator
 import uz.selerown.fevapp.core.database.ProjectRepository
 import uz.selerown.fevapp.core.model.CanvasFormat
 import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ColorAdjust
+import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextStyle
@@ -40,6 +43,8 @@ import uz.selerown.fevapp.engine.timeline.MoveAudioCommand
 import uz.selerown.fevapp.engine.timeline.MoveClipCommand
 import uz.selerown.fevapp.engine.timeline.SetAudioMixCommand
 import uz.selerown.fevapp.engine.timeline.SetCanvasCommand
+import uz.selerown.fevapp.engine.timeline.SetClipColorCommand
+import uz.selerown.fevapp.engine.timeline.SetClipSpeedCommand
 import uz.selerown.fevapp.engine.timeline.SetClipVolumeCommand
 import uz.selerown.fevapp.engine.timeline.SetTextTimingCommand
 import uz.selerown.fevapp.engine.timeline.SplitAudioCommand
@@ -123,13 +128,14 @@ class EditorViewModel @Inject constructor(
 
     fun onTool(tool: EditorTool) {
         if (tool.opensSheet) {
-            preview.pause()
-            _state.update { it.copy(openTool = tool) }
+            openSheet(tool)
             return
         }
         val selection = _state.value.selection
         when (tool) {
             EditorTool.EDIT -> selectClipAtPlayhead()
+            EditorTool.SPEED -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_SPEED)
+            EditorTool.FILTER -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_FILTER)
             EditorTool.SPLIT -> split(selection)
             EditorTool.DELETE -> delete(selection)
             EditorTool.DUPLICATE -> duplicate(selection)
@@ -141,18 +147,40 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun closeTool() = _state.update { it.copy(openTool = null) }
+    private fun openSheet(tool: EditorTool) {
+        preview.pause()
+        if (tool == EditorTool.CLIP_FILTER) showSelectedClipInPreview()
+        _state.update { it.copy(openTool = tool) }
+    }
+
+    fun closeTool() {
+        preview.previewClipStyle(null)
+        _state.update { it.copy(openTool = null) }
+    }
+
+    /** Moves the playhead into the selected clip so filter changes are visible. */
+    private fun showSelectedClipInPreview() {
+        val project = current ?: return
+        val id = _state.value.selectedClipId ?: return
+        val index = project.mainTrack.indexOf(id)
+        if (index < 0) return
+        val start = project.mainTrack.startOf(index)
+        val end = start + project.mainTrack.clips[index].durationUs
+        if (positionUs.value !in start until end) preview.seekTo(start + minOf(100_000L, (end - start) / 2))
+    }
 
     fun applyFormat(format: CanvasFormat) {
         execute(SetCanvasCommand(format))
         closeTool()
     }
 
-    private fun selectClipAtPlayhead() {
-        val project = current ?: return
+    /** Selects the main-track clip under the playhead. Returns false when there is none. */
+    private fun selectClipAtPlayhead(): Boolean {
+        val project = current ?: return false
         val clip = TimelineRules.clipAt(project.mainTrack, positionUs.value)?.clip
             ?: project.mainTrack.clips.lastOrNull()?.takeIf { positionUs.value >= project.durationUs }
         if (clip == null) message(R.string.msg_no_clip_here) else selectClip(clip.id)
+        return clip != null
     }
 
     private fun split(selection: Selection?) {
@@ -262,6 +290,32 @@ class EditorViewModel @Inject constructor(
                 select(Selection(Lane.AUDIO, clip.id))
             }
         }
+    }
+
+    // ---- Speed and color -------------------------------------------------
+
+    fun setClipSpeed(speed: Float) {
+        closeTool()
+        val id = _state.value.selectedClipId ?: return
+        val clip = current?.mainTrack?.clips?.firstOrNull { it.id == id } ?: return
+        if (clip.source.type != MediaType.VIDEO) {
+            message(R.string.msg_speed_photo)
+            return
+        }
+        execute(SetClipSpeedCommand(id, speed))
+    }
+
+    /** Live filter preview while the sheet is open (nothing is saved). */
+    fun previewColor(look: ClipLook, color: ColorAdjust) {
+        val id = _state.value.selectedClipId ?: return
+        val clip = current?.mainTrack?.clips?.firstOrNull { it.id == id } ?: return
+        preview.previewClipStyle(clip.copy(look = look, color = color))
+    }
+
+    fun setClipColor(look: ClipLook, color: ColorAdjust, applyToAll: Boolean) {
+        val id = _state.value.selectedClipId
+        closeTool()
+        execute(SetClipColorCommand(if (applyToAll) null else id ?: return, look, color))
     }
 
     fun setClipVolume(volume: Float) {

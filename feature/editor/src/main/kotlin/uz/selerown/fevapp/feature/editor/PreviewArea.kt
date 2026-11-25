@@ -2,6 +2,11 @@
 
 package uz.selerown.fevapp.feature.editor
 
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
+import android.view.LayoutInflater
+import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -26,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import uz.selerown.fevapp.core.designsystem.component.FevIconButton
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
@@ -43,6 +47,7 @@ internal fun PreviewArea(
     player: Player,
     project: Project,
     positionUs: Long,
+    colorMatrix: FloatArray?,
     isPlaying: Boolean,
     fullscreen: Boolean,
     onTogglePlay: () -> Unit,
@@ -52,18 +57,21 @@ internal fun PreviewArea(
     Box(modifier.background(FevTheme.colors.background)) {
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
+                (LayoutInflater.from(ctx).inflate(R.layout.preview_player_view, null) as PlayerView).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                     this.player = player
                 }
             },
-            update = { it.player = player },
+            update = { view ->
+                view.player = player
+                // Live filter: color matrix as a layer paint on the TextureView.
+                (view.videoSurfaceView as? TextureView)?.setLayerPaint(
+                    colorMatrix?.let { Paint().apply { colorFilter = ColorMatrixColorFilter(ColorMatrix(it)) } },
+                )
+            },
             onRelease = { it.player = null },
             modifier = Modifier
                 .fillMaxSize()

@@ -40,6 +40,7 @@ internal fun EditorScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val positionUs by viewModel.positionUs.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val colorMatrix by viewModel.preview.colorMatrix.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -88,6 +89,7 @@ internal fun EditorScreen(
                 player = viewModel.preview.player,
                 project = project,
                 positionUs = positionUs,
+                colorMatrix = colorMatrix,
                 isPlaying = isPlaying,
                 fullscreen = true,
                 onTogglePlay = viewModel::togglePlay,
@@ -108,6 +110,7 @@ internal fun EditorScreen(
                     player = viewModel.preview.player,
                     project = project,
                     positionUs = positionUs,
+                    colorMatrix = colorMatrix,
                     isPlaying = isPlaying,
                     fullscreen = false,
                     onTogglePlay = viewModel::togglePlay,
@@ -172,6 +175,9 @@ internal fun EditorScreen(
             },
             onSetClipVolume = viewModel::setClipVolume,
             onSetAudioMix = viewModel::setAudioMix,
+            onSetSpeed = viewModel::setClipSpeed,
+            onPreviewColor = viewModel::previewColor,
+            onSetColor = viewModel::setClipColor,
         )
     }
 }
