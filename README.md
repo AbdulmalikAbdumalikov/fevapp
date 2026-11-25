@@ -52,6 +52,17 @@ so English and Russian can be added later.
 - **Text**: drag it anywhere on the preview
 - **Audio waveforms** on audio-lane clips; overlapping lane clips get their own 48 dp rows
 
+## Recent improvements
+
+- **Preview controls**: tap a text or picture-in-picture clip on the preview to select it, drag to move,
+  pinch to resize (one undo step per gesture); tap elsewhere = play/pause
+- **Add media anywhere**: always-visible + on the main track (adds at the end), *Qoʻshish* tool (inserts
+  at the playhead), big "add" button in an empty project
+- **Performance**: playback no longer recomposes the whole editor — the timeline layer is moved with
+  `graphicsLayer`, the ruler redraws in its draw phase, off-screen items are skipped
+- **Compact controls**: fixed-width tool buttons with two-line labels, default-size chips (48 dp touch
+  targets kept), smaller timeline rows
+
 ## Architecture
 
 ```

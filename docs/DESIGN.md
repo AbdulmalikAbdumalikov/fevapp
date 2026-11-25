@@ -62,13 +62,18 @@
 4. Timeline: ruler · main video track (thumbnails, "+" at the end) · text lane · audio lane;
    **fixed center playhead**, content scrolls under it
 5. Bottom tool bar (horizontal scroll):
-   - nothing selected: Kesish, Audio, Matn, Ustki qatlam, Filtr, Tezlik, Subtitr, Format
+   - nothing selected: Qoʻshish, Kesish, Audio, Matn, Ustki qatlam, Filtr, Tezlik, Subtitr, Format
    - clip selected: Boʻlish, Oʻchirish, Nusxa, Chapga, Oʻngga, Tezlik, Filtr, Oʻtish, Ovoz, Ovozni ajratish, Teskari
    - text selected: Tahrirlash, Nusxa, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
    - audio selected: Ovoz, Boʻlish, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
    - overlay selected: Joylashuv, Oʻchirish, Shu yerga, Boshi shu yerda, Oxiri shu yerda
      (the last three are the button alternatives to dragging and trimming)
 6. Tool panels open as bottom sheets with **✕** (close) and **✓** (apply).
+
+## Preview gestures
+
+- Tap text / overlay = select; drag = move; pinch = resize; tap empty area = play/pause.
+- Every gesture has a sheet alternative (Tahrirlash: Joylashuv chips + size slider; Joylashuv: X, Y, size sliders).
 
 ## Preview rendering notes
 
