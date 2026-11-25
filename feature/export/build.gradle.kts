@@ -10,4 +10,5 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":engine:render"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
 }

@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -65,16 +64,19 @@ internal fun ExportScreen(
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) viewModel.start()
     }
+    // Android 13+: ask once for the progress notification; export runs either way.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.start()
+    }
     val start = {
-        if (needsLegacyPermission(context)) {
-            permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        } else {
-            viewModel.start()
+        when {
+            needsLegacyPermission(context) -> permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            needsNotificationPermission(context) -> notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            else -> viewModel.start()
         }
     }
 
     KeepScreenOn(running)
-    BackHandler(enabled = running) { viewModel.cancel() }
 
     // After saving, open the share sheet once automatically.
     val done = state.phase as? ExportPhase.Done
@@ -91,7 +93,8 @@ internal fun ExportScreen(
             FevIconButton(
                 Icons.AutoMirrored.Rounded.ArrowBack,
                 stringResource(R.string.export_back),
-                onClick = { if (running) viewModel.cancel() else onBack() },
+                // Leaving does NOT stop a running export (it continues in the background).
+                onClick = onBack,
             )
             Text(
                 stringResource(R.string.export_title),
@@ -227,6 +230,11 @@ private fun KeepScreenOn(enabled: Boolean) {
 private fun needsLegacyPermission(context: Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
         ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+        PackageManager.PERMISSION_GRANTED
+
+private fun needsNotificationPermission(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
         PackageManager.PERMISSION_GRANTED
 
 private fun share(context: Context, uri: Uri) {
