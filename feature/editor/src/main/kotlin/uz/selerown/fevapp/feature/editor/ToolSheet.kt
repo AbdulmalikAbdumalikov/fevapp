@@ -86,7 +86,7 @@ private fun GenericSheet(
     onApplyFormat: (CanvasFormat, Int) -> Unit,
 ) {
     var format by remember { mutableStateOf(currentFormat ?: CanvasFormat.ORIGINAL) }
-    var background by remember { mutableStateOf(currentBackground ?: ContentPalette[1].first) }
+    var background by remember { mutableStateOf(currentBackground ?: PURE_BLACK) }
     FevToolSheet(
         title = stringResource(tool.label),
         closeLabel = stringResource(R.string.sheet_close),
@@ -106,8 +106,8 @@ private fun GenericSheet(
                 }
                 SheetSection(R.string.format_background)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Black first: the classic bars.
-                    (listOf(ContentPalette[1]) + ContentPalette.filterIndexed { i, _ -> i != 1 }).forEach { (argb, name) ->
+                    // Pure black first (classic bars), then the content colors.
+                    (listOf(PURE_BLACK to R.string.color_black) + ContentPalette.filterIndexed { i, _ -> i != 1 }).forEach { (argb, name) ->
                         ColorSwatch(argb, stringResource(name), selected = background == argb) { background = argb }
                     }
                 }
@@ -121,6 +121,9 @@ private fun GenericSheet(
         }
     }
 }
+
+/** Default background: classic black bars (no overlay is needed in export). */
+private const val PURE_BLACK = 0xFF000000.toInt()
 
 @Composable
 private fun CanvasFormat.label(): String =

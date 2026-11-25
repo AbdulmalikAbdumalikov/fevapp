@@ -6,7 +6,7 @@
     <string name="export_fps">Kadr tezligi</string>
     <string name="export_fps_value">%1$d fps</string>
     <string name="export_resolution_value">%1$dp</string>
-    <string name="export_hint">Video telefoningiz galereyasiga (Movies/Fevapp) saqlanadi. Internet kerak emas.</string>
+    <string name="export_hint">Video telefoningiz galereyasiga (Movies/Fevapp) saqlanadi. Internet kerak emas. 60 fps faqat 60 fps li videolarda farq qiladi.</string>
     <string name="export_start">Eksport qilish</string>
     <string name="export_running">Eksport qilinmoqda…</string>
     <string name="export_keep_open">Ilovadan chiqsangiz ham eksport davom etadi</string>
