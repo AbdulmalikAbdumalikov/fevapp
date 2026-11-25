@@ -32,6 +32,17 @@ so English and Russian can be added later.
   volume, fade in / fade out, split, move, trim; several clips may overlap and are mixed on export
 - **Clip volume** and **Ovozni ajratish** (extract a clip's sound to the audio lane and mute the clip)
 
+## What works (phase 2 — core editing, continued)
+
+- **Speed** 0.25×–4× per video clip (pitch kept), speed badge on the clip
+- **Filters**: 7 original looks (Oq-qora, Kontrast oq-qora, Iliq, Sovuq, Yorqin, Xira) + brightness,
+  contrast, saturation, warmth; live preview; apply to one clip or all. One color matrix drives both
+  the preview (TextureView color filter) and the export (Media3 RgbMatrix)
+- **Transitions**: dip through black or white between clips (0.2–1.5 s), badge on the cut
+- **Text animations**: fade, pop, slide up
+- **Voice-over**: record from the microphone while the video plays muted; lands on the audio lane
+- **Background export**: a foreground service with a progress notification keeps exporting after you leave the app
+
 ## Architecture
 
 ```
