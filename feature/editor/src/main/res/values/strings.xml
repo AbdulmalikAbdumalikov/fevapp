@@ -51,6 +51,7 @@
 
     <!-- Tools: text / audio clip selected -->
     <string name="tool_text_edit">Tahrirlash</string>
+    <string name="tool_keyframe">Kalit kadr</string>
     <string name="tool_move_here">Shu yerga</string>
     <string name="tool_start_here">Boshi shu yerda</string>
     <string name="tool_end_here">Oxiri shu yerda</string>
@@ -128,6 +129,14 @@
     <string name="overlay_x">Gorizontal joylashuv</string>
     <string name="overlay_y">Vertikal joylashuv</string>
     <string name="overlay_hint">Tanlangan ustki qatlamni videoda barmoq bilan ham surish mumkin. Uning ovozi ishlatilmaydi.</string>
+
+    <!-- Keyframe sheet -->
+    <string name="keyframe_here">Shu joyda kalit kadr bor (jami: %1$d). Qiymatlarni oʻzgartirib saqlang.</string>
+    <string name="keyframe_new">Shu joyga yangi kalit kadr qoʻshiladi (hozir jami: %1$d).</string>
+    <string name="keyframe_opacity">Shaffoflik (koʻrinish)</string>
+    <string name="keyframe_save">Kalit kadrni saqlash</string>
+    <string name="keyframe_delete">Shu kalit kadrni oʻchirish</string>
+    <string name="keyframe_hint">Oʻynatgich chizigʻini boshqa joyga surib, yana kalit kadr qoʻshing — element ular orasida silliq harakatlanadi. Kalit kadr boʻlsa, videoda surish ham shu joydagi kalit kadrni oʻzgartiradi.</string>
 
     <!-- Audio sheets -->
     <string name="audio_add_music">Qurilmadan musiqa</string>

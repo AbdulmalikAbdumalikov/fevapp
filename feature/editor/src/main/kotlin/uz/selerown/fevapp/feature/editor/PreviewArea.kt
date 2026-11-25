@@ -10,6 +10,8 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import uz.selerown.fevapp.core.model.stateAt
+import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.engine.timeline.TimelineRules
 import uz.selerown.fevapp.core.model.MediaType
 import coil3.video.videoFrameMicros
@@ -202,7 +204,8 @@ private fun TextLayer(
         .filter { it.isVisibleAt(positionUs) }
         .map { clip ->
             if (draft?.id == clip.id) {
-                clip.copy(style = clip.style.copy(positionX = draft.x, positionY = draft.y, sizeFraction = draft.size))
+                val style = clip.style.copy(positionX = draft.x, positionY = draft.y, sizeFraction = draft.size)
+                clip.copy(style = style, keyframes = emptyList()) // show the dragged values
             } else {
                 clip
             }
@@ -241,13 +244,18 @@ private fun BoxScope.OverlayLayer(
         val frameH = constraints.maxHeight.toFloat()
         project.overlayClips.filter { it.isVisibleAt(positionUs) || draft?.id == it.id }.forEach { clip ->
             val player = players[clip.id] ?: return@forEach
-            val shown = if (draft?.id == clip.id) clip.copy(centerX = draft.x, centerY = draft.y, scale = draft.size) else clip
-            val rect = overlayRect(shown, frameW, frameH)
+            val state = if (draft?.id == clip.id) {
+                Keyframe(0, draft.x, draft.y, draft.size, clip.stateAt(positionUs).alpha)
+            } else {
+                clip.stateAt(positionUs)
+            }
+            val rect = overlayRect(clip, state, frameW, frameH)
             key(clip.id) {
                 Box(
                     Modifier
                         .offset { IntOffset(rect.left.roundToInt(), rect.top.roundToInt()) }
                         .size(with(density) { rect.width().toDp() }, with(density) { rect.height().toDp() })
+                        .alpha(state.alpha)
                         .then(if (clip.id == selectedId) Modifier.border(2.dp, c.accent) else Modifier),
                 ) {
                     AndroidView(
@@ -270,13 +278,13 @@ private fun BoxScope.OverlayLayer(
     }
 }
 
-/** Overlay rectangle in frame pixels (same math as the export). */
-private fun overlayRect(clip: OverlayClip, frameW: Float, frameH: Float): android.graphics.RectF {
-    val w = frameW * clip.scale
+/** Overlay rectangle in frame pixels for a state (same math as the export). */
+private fun overlayRect(clip: OverlayClip, state: Keyframe, frameW: Float, frameH: Float): android.graphics.RectF {
+    val w = frameW * state.scale
     val aspect = clip.source.height.toFloat().coerceAtLeast(1f) / clip.source.width.toFloat().coerceAtLeast(1f)
     val h = w * aspect
-    val cx = clip.centerX * frameW
-    val cy = clip.centerY * frameH
+    val cx = state.x * frameW
+    val cy = state.y * frameH
     return android.graphics.RectF(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
 }
 
@@ -326,15 +334,12 @@ private fun ElementGestures(
                     var y = 0f
                     var s = 0f
                     fun loadTarget(sel: Selection?) {
-                        when (sel?.lane) {
-                            Lane.TEXT -> proj.textClips.firstOrNull { it.id == sel.id }?.let {
-                                x = it.style.positionX; y = it.style.positionY; s = it.style.sizeFraction
-                            }
-                            Lane.OVERLAY -> proj.overlayClips.firstOrNull { it.id == sel.id }?.let {
-                                x = it.centerX; y = it.centerY; s = it.scale
-                            }
-                            else -> Unit
-                        }
+                        val k = when (sel?.lane) {
+                            Lane.TEXT -> proj.textClips.firstOrNull { it.id == sel.id }?.stateAt(timeUs)
+                            Lane.OVERLAY -> proj.overlayClips.firstOrNull { it.id == sel.id }?.stateAt(timeUs)
+                            else -> null
+                        } ?: return
+                        x = k.x; y = k.y; s = k.scale
                     }
                     loadTarget(target)
                     var moved = false
@@ -375,10 +380,11 @@ private fun ElementGestures(
 
 /** Topmost element under (px, py): overlays (drawn last) before texts. */
 private fun hitTest(project: Project, timeUs: Long, px: Float, py: Float, w: Float, h: Float): Selection? {
-    project.overlayClips.asReversed().firstOrNull { it.isVisibleAt(timeUs) && overlayRect(it, w, h).contains(px, py) }
+    project.overlayClips.asReversed()
+        .firstOrNull { it.isVisibleAt(timeUs) && overlayRect(it, it.stateAt(timeUs), w, h).contains(px, py) }
         ?.let { return Selection(Lane.OVERLAY, it.id) }
     project.textClips.asReversed().firstOrNull {
-        it.isVisibleAt(timeUs) && TextRenderer.bounds(it, w.toInt(), h.toInt()).contains(px, py)
+        it.isVisibleAt(timeUs) && TextRenderer.bounds(it, w.toInt(), h.toInt(), timeUs).contains(px, py)
     }?.let { return Selection(Lane.TEXT, it.id) }
     return null
 }

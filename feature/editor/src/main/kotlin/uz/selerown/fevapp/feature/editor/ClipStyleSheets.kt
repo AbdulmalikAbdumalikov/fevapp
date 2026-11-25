@@ -2,6 +2,8 @@ package uz.selerown.fevapp.feature.editor
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import uz.selerown.fevapp.core.designsystem.component.FevPrimaryButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -29,7 +31,9 @@ import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
+import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.core.model.OverlayClip
+import uz.selerown.fevapp.core.designsystem.component.FevSecondaryButton
 import uz.selerown.fevapp.core.model.TransitionType
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -264,6 +268,53 @@ private fun FractionSlider(@StringRes label: Int, value: Float, range: ClosedFlo
             onValueChange = { onChange((it * 100).roundToInt() / 100f) },
             valueRange = range,
             colors = SliderDefaults.colors(thumbColor = c.accent, activeTrackColor = c.accent),
+        )
+    }
+}
+
+/**
+ * Keyframe at the playhead for the selected text/overlay: position, size and
+ * opacity sliders (the accessible alternative to dragging on the preview).
+ */
+@Composable
+internal fun KeyframeSheet(
+    state: Keyframe,
+    scaleRange: ClosedFloatingPointRange<Float>,
+    count: Int,
+    hasHere: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (x: Float, y: Float, scale: Float, alpha: Float) -> Unit,
+    onDelete: () -> Unit,
+) {
+    var x by remember { mutableFloatStateOf(state.x) }
+    var y by remember { mutableFloatStateOf(state.y) }
+    var scale by remember { mutableFloatStateOf(state.scale.coerceIn(scaleRange)) }
+    var alpha by remember { mutableFloatStateOf(state.alpha) }
+    FevToolSheet(
+        title = stringResource(R.string.tool_keyframe),
+        closeLabel = stringResource(R.string.sheet_close),
+        applyLabel = stringResource(R.string.sheet_apply),
+        onDismiss = onDismiss,
+        onApply = { onSave(x, y, scale, alpha) },
+    ) {
+        Text(
+            stringResource(if (hasHere) R.string.keyframe_here else R.string.keyframe_new, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = FevTheme.colors.textSecondary,
+        )
+        FractionSlider(R.string.overlay_size, scale, scaleRange) { scale = it }
+        FractionSlider(R.string.overlay_x, x, 0f..1f) { x = it }
+        FractionSlider(R.string.overlay_y, y, 0f..1f) { y = it }
+        FractionSlider(R.string.keyframe_opacity, alpha, 0f..1f) { alpha = it }
+        Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FevPrimaryButton(stringResource(R.string.keyframe_save), { onSave(x, y, scale, alpha) }, Modifier.fillMaxWidth())
+            if (hasHere) FevSecondaryButton(stringResource(R.string.keyframe_delete), onDelete, Modifier.fillMaxWidth())
+        }
+        Text(
+            stringResource(R.string.keyframe_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = FevTheme.colors.textSecondary,
+            modifier = Modifier.padding(top = 12.dp),
         )
     }
 }

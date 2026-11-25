@@ -11,6 +11,7 @@ import android.text.TextPaint
 import uz.selerown.fevapp.core.model.TextAnimation
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextFont
+import uz.selerown.fevapp.core.model.stateAt
 import kotlin.math.min
 
 /**
@@ -56,7 +57,18 @@ object TextRenderer {
      */
     fun draw(canvas: Canvas, width: Int, height: Int, clips: List<TextClip>, timeUs: Long? = null) {
         if (width <= 0 || height <= 0) return
-        clips.forEach { drawOne(canvas, width, height, it, motion(it, timeUs)) }
+        clips.forEach { clip ->
+            val (animated, alpha) = animated(clip, timeUs)
+            val motion = motion(clip, timeUs)
+            drawOne(canvas, width, height, animated, motion.copy(alpha = motion.alpha * alpha))
+        }
+    }
+
+    /** The clip with its keyframed position/size at [timeUs], plus the keyframed opacity. */
+    private fun animated(clip: TextClip, timeUs: Long?): Pair<TextClip, Float> {
+        if (timeUs == null || clip.keyframes.isEmpty()) return clip to 1f
+        val k = clip.stateAt(timeUs)
+        return clip.copy(style = clip.style.copy(positionX = k.x, positionY = k.y, sizeFraction = k.scale)) to k.alpha
     }
 
     private fun drawOne(canvas: Canvas, width: Int, height: Int, clip: TextClip, motion: Motion) {
@@ -113,8 +125,8 @@ object TextRenderer {
      * Where [clip] is drawn in a [width]×[height] frame (without animation),
      * used to hit-test taps on the preview.
      */
-    fun bounds(clip: TextClip, width: Int, height: Int): RectF {
-        val style = clip.style
+    fun bounds(clip: TextClip, width: Int, height: Int, timeUs: Long? = null): RectF {
+        val style = animated(clip, timeUs).first.style
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = style.sizeFraction * min(width, height)
             typeface = typeface(style.font, style.bold)

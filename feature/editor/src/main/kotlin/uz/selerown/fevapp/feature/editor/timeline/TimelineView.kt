@@ -275,6 +275,7 @@ internal fun TimelineView(
                         stringResource(R.string.lane_overlay_item),
                         clip.startUs,
                         clip.endUs,
+                        keyframeOffsets = clip.keyframes.map { it.offsetUs },
                     )
                 },
                 icon = Icons.Rounded.PictureInPicture,
@@ -301,6 +302,7 @@ internal fun TimelineView(
                         stringResource(R.string.lane_text_item, clip.text),
                         clip.startUs,
                         clip.endUs,
+                        keyframeOffsets = clip.keyframes.map { it.offsetUs },
                     )
                 },
                 icon = Icons.Rounded.TextFields,

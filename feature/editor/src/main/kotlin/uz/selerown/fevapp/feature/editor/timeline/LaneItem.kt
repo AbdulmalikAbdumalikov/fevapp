@@ -54,6 +54,8 @@ internal data class LaneItemModel(
     /** Audio only: source file (for the waveform) and where the used window starts in it. */
     val sourceUri: String? = null,
     val sourceStartUs: Long = 0L,
+    /** Keyframe offsets from the clip start (drawn as small diamonds). */
+    val keyframeOffsets: List<Long> = emptyList(),
 )
 
 /**
@@ -144,6 +146,20 @@ internal fun LaneItem(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = 4.dp),
             )
+        }
+        if (model.keyframeOffsets.isNotEmpty()) {
+            val diamond = c.textPrimary
+            Canvas(Modifier.fillMaxSize()) {
+                val half = 4.dp.toPx()
+                val cy = size.height - half - 2.dp.toPx()
+                model.keyframeOffsets.forEach { off ->
+                    val cx = off * pxPerUs
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(cx, cy - half); lineTo(cx + half, cy); lineTo(cx, cy + half); lineTo(cx - half, cy); close()
+                    }
+                    drawPath(path, diamond)
+                }
+            }
         }
         if (selected) {
             EdgeHandle(model.id, isStart = true, current = { current }, scale = { scale }, onTrim, onDragEnd)

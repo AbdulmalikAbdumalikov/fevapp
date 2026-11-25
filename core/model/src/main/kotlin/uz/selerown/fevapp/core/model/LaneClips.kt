@@ -49,6 +49,8 @@ data class TextClip(
     val startUs: Long,
     val durationUs: Long,
     val style: TextStyle = TextStyle(),
+    /** Animation of position/size/opacity (offsets from [startUs]); empty = still. */
+    val keyframes: List<Keyframe> = emptyList(),
 ) {
     val endUs: Long
         get() = startUs + durationUs
@@ -115,6 +117,8 @@ data class OverlayClip(
     val centerX: Float = 0.7f,
     val centerY: Float = 0.3f,
     val scale: Float = 0.45f,
+    /** Animation of position/size/opacity (offsets from [startUs]); empty = still. */
+    val keyframes: List<Keyframe> = emptyList(),
 ) {
     val durationUs: Long
         get() = trimEndUs - trimStartUs

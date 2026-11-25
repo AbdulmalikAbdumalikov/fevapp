@@ -12,6 +12,7 @@ import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Diamond
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Filter
@@ -66,6 +67,7 @@ enum class EditorTool(
     // Text / audio lane item: button alternatives to dragging and trimming
     TEXT_EDIT(R.string.tool_text_edit, Icons.Rounded.Edit, true),
     OVERLAY_TRANSFORM(R.string.tool_overlay_transform, Icons.Rounded.OpenWith, true),
+    KEYFRAME(R.string.tool_keyframe, Icons.Rounded.Diamond, true),
     AUDIO_MIX(R.string.tool_volume, Icons.AutoMirrored.Rounded.VolumeUp, true),
     MOVE_HERE(R.string.tool_move_here, Icons.Rounded.Place, false),
     START_HERE(R.string.tool_start_here, Icons.Rounded.FirstPage, false),
@@ -78,11 +80,11 @@ enum class EditorTool(
         /** Move left/right are the visible alternative to long-press dragging. */
         val clipTools = listOf(SPLIT, DELETE, DUPLICATE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)
 
-        val textTools = listOf(TEXT_EDIT, DUPLICATE, DELETE, MOVE_HERE, START_HERE, END_HERE)
+        val textTools = listOf(TEXT_EDIT, KEYFRAME, DUPLICATE, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
         val audioTools = listOf(AUDIO_MIX, SPLIT, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
-        val overlayTools = listOf(OVERLAY_TRANSFORM, DELETE, MOVE_HERE, START_HERE, END_HERE)
+        val overlayTools = listOf(OVERLAY_TRANSFORM, KEYFRAME, DELETE, MOVE_HERE, START_HERE, END_HERE)
 
         fun toolsFor(lane: Lane?): List<EditorTool> = when (lane) {
             null -> mainTools

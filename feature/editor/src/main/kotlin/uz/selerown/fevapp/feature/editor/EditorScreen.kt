@@ -238,6 +238,9 @@ internal fun EditorScreen(
             onSetColor = viewModel::setClipColor,
             onSetTransition = viewModel::setTransition,
             onSetOverlayTransform = viewModel::setOverlayTransform,
+            positionUs = positionState.value,
+            onSaveKeyframe = viewModel::saveKeyframe,
+            onDeleteKeyframe = viewModel::deleteKeyframeHere,
         )
     }
 }

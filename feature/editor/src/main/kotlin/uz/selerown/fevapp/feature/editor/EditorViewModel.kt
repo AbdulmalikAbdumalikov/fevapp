@@ -23,7 +23,9 @@ import uz.selerown.fevapp.core.model.CanvasFormat
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
+import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.core.model.MediaType
+import uz.selerown.fevapp.core.model.stateAt
 import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.TextClip
@@ -36,6 +38,10 @@ import uz.selerown.fevapp.engine.render.Waveform
 import uz.selerown.fevapp.engine.render.WaveformLoader
 import uz.selerown.fevapp.engine.timeline.AddAudioCommand
 import uz.selerown.fevapp.engine.timeline.AddClipsCommand
+import uz.selerown.fevapp.engine.timeline.DeleteOverlayKeyframeCommand
+import uz.selerown.fevapp.engine.timeline.DeleteTextKeyframeCommand
+import uz.selerown.fevapp.engine.timeline.SetOverlayKeyframeCommand
+import uz.selerown.fevapp.engine.timeline.SetTextKeyframeCommand
 import uz.selerown.fevapp.engine.timeline.AddOverlayCommand
 import uz.selerown.fevapp.engine.timeline.DeleteOverlayCommand
 import uz.selerown.fevapp.engine.timeline.MoveOverlayCommand
@@ -143,6 +149,10 @@ class EditorViewModel @Inject constructor(
     // ---- Tools ----------------------------------------------------------
 
     fun onTool(tool: EditorTool) {
+        if (tool == EditorTool.KEYFRAME && keyframeTarget() == null) {
+            message(R.string.msg_playhead_outside)
+            return
+        }
         if (tool.opensSheet) {
             openSheet(tool)
             return
@@ -304,6 +314,13 @@ class EditorViewModel @Inject constructor(
         val draft = _state.value.textDraft ?: return
         _state.update { it.copy(textDraft = null) }
         val clip = current?.textClips?.firstOrNull { it.id == draft.id } ?: return
+        if (clip.keyframes.isNotEmpty()) {
+            // Animated text: the gesture edits the keyframe at the playhead.
+            val offset = (positionUs.value - clip.startUs).coerceIn(0L, clip.durationUs)
+            val alpha = clip.stateAt(positionUs.value).alpha
+            execute(SetTextKeyframeCommand(clip.id, Keyframe(offset, draft.x, draft.y, draft.size, alpha)))
+            return
+        }
         val style = clip.style.copy(positionX = draft.x, positionY = draft.y, sizeFraction = draft.size)
         execute(UpdateTextCommand(clip.id, clip.text, style))
     }
@@ -348,7 +365,43 @@ class EditorViewModel @Inject constructor(
     fun onOverlayTransformEnd() {
         val draft = _state.value.overlayDraft ?: return
         _state.update { it.copy(overlayDraft = null) }
+        val clip = current?.overlayClips?.firstOrNull { it.id == draft.id } ?: return
+        if (clip.keyframes.isNotEmpty()) {
+            val offset = (positionUs.value - clip.startUs).coerceIn(0L, clip.durationUs)
+            val alpha = clip.stateAt(positionUs.value).alpha
+            execute(SetOverlayKeyframeCommand(clip.id, Keyframe(offset, draft.x, draft.y, draft.size, alpha)))
+            return
+        }
         execute(SetOverlayTransformCommand(draft.id, draft.x, draft.y, draft.size))
+    }
+
+    // ---- Keyframes ------------------------------------------------------
+
+    /** Selected text/overlay and the playhead offset inside it, or null when outside. */
+    private fun keyframeTarget(): Pair<Selection, Long>? {
+        val sel = _state.value.selection ?: return null
+        val project = current ?: return null
+        val (start, end) = when (sel.lane) {
+            Lane.TEXT -> project.textClips.firstOrNull { it.id == sel.id }?.let { it.startUs to it.endUs }
+            Lane.OVERLAY -> project.overlayClips.firstOrNull { it.id == sel.id }?.let { it.startUs to it.endUs }
+            else -> null
+        } ?: return null
+        val t = positionUs.value
+        return if (t in start..end) sel to (t - start) else null
+    }
+
+    /** Saves (adds or replaces) the keyframe at the playhead. */
+    fun saveKeyframe(x: Float, y: Float, scale: Float, alpha: Float) {
+        closeTool()
+        val (sel, offset) = keyframeTarget() ?: return message(R.string.msg_playhead_outside)
+        val k = Keyframe(offset, x, y, scale, alpha)
+        execute(if (sel.lane == Lane.TEXT) SetTextKeyframeCommand(sel.id, k) else SetOverlayKeyframeCommand(sel.id, k))
+    }
+
+    fun deleteKeyframeHere() {
+        closeTool()
+        val (sel, offset) = keyframeTarget() ?: return
+        execute(if (sel.lane == Lane.TEXT) DeleteTextKeyframeCommand(sel.id, offset) else DeleteOverlayKeyframeCommand(sel.id, offset))
     }
 
     // ---- Audio ----------------------------------------------------------

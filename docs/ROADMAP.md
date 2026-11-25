@@ -28,7 +28,8 @@ Fevapp stays **free and offline** in every phase.
 
 ## Phase 3 — Advanced
 
-- Keyframes (position, scale, rotation, opacity, volume)
+- ✅ Keyframes for text and overlays (position, size, opacity; smooth ease-in-out)
+- ⬜ Keyframes: rotation, volume, main-clip zoom/pan
 - ✅ Overlays / picture-in-picture on the overlay track (silent; sound from main track and audio lane)
 - Masks
 - Chroma key (green screen)

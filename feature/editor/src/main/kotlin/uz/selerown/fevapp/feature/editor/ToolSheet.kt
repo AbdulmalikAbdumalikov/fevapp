@@ -22,7 +22,10 @@ import uz.selerown.fevapp.core.model.CanvasFormat
 import uz.selerown.fevapp.core.model.ClipLook
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Project
+import uz.selerown.fevapp.core.model.KeyframeMath
+import uz.selerown.fevapp.core.model.OverlayClip
 import uz.selerown.fevapp.core.model.TextStyle
+import uz.selerown.fevapp.core.model.stateAt
 import uz.selerown.fevapp.core.model.TransitionType
 
 /**
@@ -47,6 +50,9 @@ internal fun ToolSheet(
     onSetColor: (ClipLook, ColorAdjust, Boolean) -> Unit,
     onSetTransition: (TransitionType, Long, Boolean) -> Unit,
     onSetOverlayTransform: (Float, Float, Float) -> Unit,
+    positionUs: Long,
+    onSaveKeyframe: (x: Float, y: Float, scale: Float, alpha: Float) -> Unit,
+    onDeleteKeyframe: () -> Unit,
 ) {
     val selectedClip = project?.mainTrack?.clips?.firstOrNull { it.id == selection?.id }
     val selectedId = selection?.id
@@ -68,6 +74,31 @@ internal fun ToolSheet(
         EditorTool.OVERLAY_TRANSFORM -> project?.overlayClips?.firstOrNull { it.id == selectedId }?.let {
             OverlaySheet(it, onDismiss, onSetOverlayTransform)
         } ?: LaunchedEffect(Unit) { onDismiss() }
+        EditorTool.KEYFRAME -> {
+            val text = project?.textClips?.firstOrNull { it.id == selectedId }
+            val overlay = project?.overlayClips?.firstOrNull { it.id == selectedId }
+            when {
+                text != null -> KeyframeSheet(
+                    state = text.stateAt(positionUs),
+                    scaleRange = TextStyle.MIN_SIZE..TextStyle.MAX_SIZE,
+                    count = text.keyframes.size,
+                    hasHere = KeyframeMath.has(text.keyframes, positionUs - text.startUs),
+                    onDismiss = onDismiss,
+                    onSave = onSaveKeyframe,
+                    onDelete = onDeleteKeyframe,
+                )
+                overlay != null -> KeyframeSheet(
+                    state = overlay.stateAt(positionUs),
+                    scaleRange = OverlayClip.MIN_SCALE..OverlayClip.MAX_SCALE,
+                    count = overlay.keyframes.size,
+                    hasHere = KeyframeMath.has(overlay.keyframes, positionUs - overlay.startUs),
+                    onDismiss = onDismiss,
+                    onSave = onSaveKeyframe,
+                    onDelete = onDeleteKeyframe,
+                )
+                else -> LaunchedEffect(Unit) { onDismiss() }
+            }
+        }
         EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound, onRecordVoice)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
             ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)

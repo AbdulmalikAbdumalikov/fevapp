@@ -54,6 +54,11 @@ so English and Russian can be added later.
 
 ## Recent improvements
 
+- **Keyframes** (Kalit kadr) for text and picture-in-picture clips: position, size and opacity at any
+  time, smooth in-between motion; diamonds on the timeline; dragging an animated element edits the
+  keyframe at the playhead
+- **Blurred background** option in Format
+
 - **Preview controls**: tap a text or picture-in-picture clip on the preview to select it, drag to move,
   pinch to resize (one undo step per gesture); tap elsewhere = play/pause
 - **Add media anywhere**: always-visible + on the main track (adds at the end), *Qoʻshish* tool (inserts

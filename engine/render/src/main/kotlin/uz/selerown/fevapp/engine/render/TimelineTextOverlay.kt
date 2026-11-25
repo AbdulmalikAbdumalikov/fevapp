@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.BitmapOverlay
 import uz.selerown.fevapp.core.model.TextClip
+import uz.selerown.fevapp.core.model.stateAt
 
 /**
  * Export overlay for ONE main-track item: draws the text clips that are
@@ -34,7 +35,11 @@ internal class TimelineTextOverlay(
         // Redraw when the set of texts changes or an animation moves (~30 steps).
         val key = visible.map { clip ->
             val m = TextRenderer.motion(clip, timelineUs)
-            listOf(clip.id, (m.alpha * 30).toInt(), (m.scale * 30).toInt(), (m.shiftY * 300).toInt())
+            val k = if (clip.keyframes.isEmpty()) null else clip.stateAt(timelineUs)
+            listOf(
+                clip.id, (m.alpha * 30).toInt(), (m.scale * 30).toInt(), (m.shiftY * 300).toInt(),
+                k?.let { listOf((it.x * 600).toInt(), (it.y * 600).toInt(), (it.scale * 2000).toInt(), (it.alpha * 30).toInt()) },
+            )
         }
         lastBitmap?.let { if (key == lastKey) return it }
         // A new bitmap (not a redraw) so the overlay knows to upload it again.
