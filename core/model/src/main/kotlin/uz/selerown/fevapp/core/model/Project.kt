@@ -38,8 +38,12 @@ data class Project(
     /** Output frame shape (w, h): the chosen canvas, or the first clip's own shape (9:16 if empty). */
     fun frameRatio(): Pair<Int, Int> {
         if (canvas != CanvasFormat.ORIGINAL) return canvas.widthRatio to canvas.heightRatio
-        val first = mainTrack.clips.firstOrNull()?.source
-        return if (first != null && first.width > 0 && first.height > 0) first.width to first.height else 9 to 16
+        val first = mainTrack.clips.firstOrNull()
+        return if (first != null && first.displayWidth > 0 && first.displayHeight > 0) {
+            first.displayWidth to first.displayHeight
+        } else {
+            9 to 16
+        }
     }
 
     /** Returns a copy where the main track is replaced by [transform]'s result. */

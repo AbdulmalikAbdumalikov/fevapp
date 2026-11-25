@@ -2,6 +2,7 @@ package uz.selerown.fevapp.engine.timeline
 
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.Project
@@ -91,5 +92,34 @@ class SetClipColorCommand(
         }
         if (!changed) return project
         return project.updateMainTrack { it.copy(clips = updated) }
+    }
+}
+
+/**
+ * Crop / rotate / mirror one clip. The crop window is kept inside the source
+ * and at least [ClipTransform.MIN_SIZE] on each side; rotation snaps to 90°.
+ */
+class SetClipTransformCommand(
+    private val clipId: String,
+    private val transform: ClipTransform,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val index = project.mainTrack.indexOf(clipId)
+        if (index < 0) return project
+        val min = ClipTransform.MIN_SIZE
+        val left = transform.left.coerceIn(0f, 1f - min)
+        val top = transform.top.coerceIn(0f, 1f - min)
+        val fixed = transform.copy(
+            left = left,
+            top = top,
+            right = transform.right.coerceIn(left + min, 1f),
+            bottom = transform.bottom.coerceIn(top + min, 1f),
+            rotation = ((transform.rotation / 90 % 4 + 4) % 4) * 90,
+        )
+        val clip = project.mainTrack.clips[index]
+        if (clip.transform == fixed) return project
+        return project.updateMainTrack { t ->
+            t.copy(clips = t.clips.toMutableList().apply { set(index, clip.copy(transform = fixed)) })
+        }
     }
 }

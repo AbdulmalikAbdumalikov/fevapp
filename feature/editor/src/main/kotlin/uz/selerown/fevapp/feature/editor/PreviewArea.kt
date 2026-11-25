@@ -10,6 +10,12 @@ import android.view.TextureView
 import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import uz.selerown.fevapp.core.model.Clip
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import uz.selerown.fevapp.core.model.stateAt
 import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.engine.timeline.TimelineRules
@@ -81,6 +87,7 @@ internal fun PreviewArea(
     project: Project,
     positionUs: () -> Long,
     colorMatrix: FloatArray?,
+    frameClip: Clip?,
     selectedTextId: String?,
     textDraft: TextDraft?,
     onTextTransform: (id: String, x: Float, y: Float, size: Float) -> Unit,
@@ -114,7 +121,7 @@ internal fun PreviewArea(
         ) {
         if (project.backgroundBlur) BlurredBackground(project, positionUs)
         // No clips: no player view (otherwise its last frame would stay on screen).
-        if (project.mainTrack.clips.isNotEmpty()) AndroidView(
+        if (project.mainTrack.clips.isNotEmpty()) TransformedVideo(frameClip) { videoModifier -> AndroidView(
             factory = { ctx ->
                 (LayoutInflater.from(ctx).inflate(R.layout.preview_player_view, null) as PlayerView).apply {
                     layoutParams = ViewGroup.LayoutParams(
@@ -132,8 +139,8 @@ internal fun PreviewArea(
                 )
             },
             onRelease = { it.player = null },
-            modifier = Modifier.fillMaxSize(),
-        )
+            modifier = videoModifier,
+        ) }
         // Same order as the export: text, then picture-in-picture above it.
         TextLayer(
             project = project,
@@ -417,4 +424,45 @@ private fun BlurredBackground(project: Project, position: () -> Long) {
             .blur(28.dp, BlurredEdgeTreatment.Rectangle)
             .alpha(0.85f),
     )
+}
+
+/**
+ * Places the video so the clip's crop window fills its fitted rectangle and
+ * applies mirror/rotation with graphicsLayer — no GL needed. The full video
+ * is laid out larger than the window and clipped to it.
+ */
+@Composable
+private fun TransformedVideo(clip: Clip?, content: @Composable (Modifier) -> Unit) {
+    if (clip == null || clip.transform.isIdentity || clip.displayWidth <= 0 || clip.displayHeight <= 0) {
+        content(Modifier.fillMaxSize())
+        return
+    }
+    val t = clip.transform
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val ratio = clip.displayWidth.toFloat() / clip.displayHeight
+        val fitsWidth = ratio > maxWidth / maxHeight
+        val dw = if (fitsWidth) maxWidth else maxHeight * ratio
+        val dh = if (fitsWidth) maxWidth / ratio else maxHeight
+        // Crop window size before rotation, then the whole video at that scale.
+        val cw = if (t.quarterTurn) dh else dw
+        val ch = if (t.quarterTurn) dw else dh
+        val vw = cw / (t.right - t.left)
+        val vh = ch / (t.bottom - t.top)
+        val ccx = vw * ((t.left + t.right) / 2)
+        val ccy = vh * ((t.top + t.bottom) / 2)
+        Box(Modifier.align(Alignment.Center).size(dw, dh).clipToBounds()) {
+            content(
+                Modifier
+                    .wrapContentSize(Alignment.TopStart, unbounded = true)
+                    .offset(x = dw / 2 - ccx, y = dh / 2 - ccy)
+                    .requiredSize(vw, vh)
+                    .graphicsLayer {
+                        transformOrigin = TransformOrigin((t.left + t.right) / 2, (t.top + t.bottom) / 2)
+                        rotationZ = t.rotation.toFloat()
+                        scaleX = if (t.flipH) -1f else 1f
+                        scaleY = if (t.flipV) -1f else 1f
+                    },
+            )
+        }
+    }
 }

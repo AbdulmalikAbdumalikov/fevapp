@@ -32,6 +32,10 @@ class PreviewPlayer(private val context: Context) {
      * on the video TextureView — cheaper and more robust than GL effects.
      */
     private val _colorMatrix = MutableStateFlow<FloatArray?>(null)
+
+    /** Clip on screen (or the sheet's live version): the UI applies its crop/rotation. */
+    private val _frameClip = MutableStateFlow<Clip?>(null)
+    val frameClip: StateFlow<Clip?> = _frameClip.asStateFlow()
     val colorMatrix: StateFlow<FloatArray?> = _colorMatrix.asStateFlow()
 
     /** True while recording a voice-over: the preview must not be heard by the mic. */
@@ -146,6 +150,7 @@ class PreviewPlayer(private val context: Context) {
 
     private fun applyClipStyle() {
         val clip = styleOverride ?: clips.getOrNull(player.currentMediaItemIndex)
+        _frameClip.value = clip
         player.volume = if (muted) 0f else clip?.volume ?: 1f
         val speed = clip?.speed ?: 1f
         if (player.playbackParameters.speed != speed) player.playbackParameters = PlaybackParameters(speed)

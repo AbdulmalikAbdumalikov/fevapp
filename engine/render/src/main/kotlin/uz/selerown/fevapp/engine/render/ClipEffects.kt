@@ -7,8 +7,11 @@ import androidx.media3.common.Effect
 import androidx.media3.common.SpeedParameters
 import androidx.media3.common.audio.SpeedProvider
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Crop
 import androidx.media3.effect.RgbMatrix
+import androidx.media3.effect.ScaleAndRotateTransformation
 import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.TransitionType
 
 /**
@@ -53,6 +56,25 @@ object ClipEffects {
             val m = ColorMath.combined(clipMatrix, ColorMath.fadeAt(clips, timelineUs)) ?: return identity
             return ColorMath.toMedia3Matrix(m)
         }
+    }
+
+    /**
+     * Crop (Media3 NDC: x -1..1 left→right, y -1..1 bottom→top), then mirror and
+     * rotate. Media3 rotates counter-clockwise, our rotation is clockwise.
+     */
+    fun transform(t: ClipTransform): List<Effect> {
+        if (t.isIdentity) return emptyList()
+        val effects = mutableListOf<Effect>()
+        if (t.isCropped) {
+            effects += Crop(t.left * 2f - 1f, t.right * 2f - 1f, 1f - t.bottom * 2f, 1f - t.top * 2f)
+        }
+        if (t.rotation != 0 || t.flipH || t.flipV) {
+            effects += ScaleAndRotateTransformation.Builder()
+                .setScale(if (t.flipH) -1f else 1f, if (t.flipV) -1f else 1f)
+                .setRotationDegrees(-t.rotation.toFloat())
+                .build()
+        }
+        return effects
     }
 
     /** Constant playback speed for export (pitch kept, like the preview). */

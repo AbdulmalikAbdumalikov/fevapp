@@ -20,6 +20,7 @@ import uz.selerown.fevapp.core.designsystem.component.FevToolSheet
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.CanvasFormat
 import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Project
 import uz.selerown.fevapp.core.model.KeyframeMath
@@ -50,6 +51,8 @@ internal fun ToolSheet(
     onSetColor: (ClipLook, ColorAdjust, Boolean) -> Unit,
     onSetTransition: (TransitionType, Long, Boolean) -> Unit,
     onSetOverlayTransform: (Float, Float, Float) -> Unit,
+    onPreviewTransform: (ClipTransform) -> Unit,
+    onSetTransform: (ClipTransform) -> Unit,
     positionUs: Long,
     onSaveKeyframe: (x: Float, y: Float, scale: Float, alpha: Float) -> Unit,
     onDeleteKeyframe: () -> Unit,
@@ -99,6 +102,8 @@ internal fun ToolSheet(
                 else -> LaunchedEffect(Unit) { onDismiss() }
             }
         }
+        EditorTool.CROP -> selectedClip?.let { CropSheet(it, onPreviewTransform, onDismiss, onSetTransform) }
+            ?: LaunchedEffect(Unit) { onDismiss() }
         EditorTool.AUDIO -> AudioAddSheet(onDismiss, onPickMusic, onPickVideoSound, onRecordVoice)
         EditorTool.VOLUME -> project?.mainTrack?.clips?.firstOrNull { it.id == selectedId }?.let { clip ->
             ClipVolumeSheet(clip.volume, onDismiss, onSetClipVolume)

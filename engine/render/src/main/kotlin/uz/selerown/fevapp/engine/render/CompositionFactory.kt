@@ -37,14 +37,14 @@ internal object CompositionFactory {
 
     /** Size of [clip] fitted into the frame, in pixels. */
     private fun fitSize(clip: Clip, size: OutputSize): Pair<Float, Float> {
-        val w = clip.source.width.coerceAtLeast(1).toFloat()
-        val h = clip.source.height.coerceAtLeast(1).toFloat()
+        val w = clip.displayWidth.coerceAtLeast(1).toFloat()
+        val h = clip.displayHeight.coerceAtLeast(1).toFloat()
         val scale = minOf(size.width / w, size.height / h)
         return w * scale to h * scale
     }
 
     private fun fillsFrame(clip: Clip, size: OutputSize): Boolean {
-        if (clip.source.width <= 0 || clip.source.height <= 0) return true
+        if (clip.displayWidth <= 0 || clip.displayHeight <= 0) return true
         val (w, h) = fitSize(clip, size)
         return size.width - w <= 2f && size.height - h <= 2f
     }
@@ -84,6 +84,7 @@ internal object CompositionFactory {
         val clip = clips[index]
         val endUs = startUs + clip.durationUs
         val videoEffects = mutableListOf<Effect>()
+        videoEffects += ClipEffects.transform(clip.transform) // crop, mirror, rotate first
         videoEffects += ClipEffects.color(clips, index, startUs) // before the overlay, so text keeps its colors
         val blurBars = backgroundBlur && !fillsFrame(clip, size)
         videoEffects += if (blurBars) {

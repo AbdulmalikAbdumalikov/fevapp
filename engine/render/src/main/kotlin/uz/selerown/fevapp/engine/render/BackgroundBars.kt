@@ -18,8 +18,8 @@ import kotlin.math.roundToInt
 internal object BackgroundBars {
 
     fun create(clip: Clip, size: OutputSize, color: Int): BitmapOverlay? {
-        val w = clip.source.width
-        val h = clip.source.height
+        val w = clip.displayWidth
+        val h = clip.displayHeight
         if (w <= 0 || h <= 0) return null
         val scale = min(size.width.toFloat() / w, size.height.toFloat() / h)
         val contentW = (w * scale).roundToInt()

@@ -22,6 +22,7 @@ import uz.selerown.fevapp.core.database.ProjectRepository
 import uz.selerown.fevapp.core.model.CanvasFormat
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.core.model.MediaType
@@ -60,6 +61,7 @@ import uz.selerown.fevapp.engine.timeline.MoveClipCommand
 import uz.selerown.fevapp.engine.timeline.SetAudioMixCommand
 import uz.selerown.fevapp.engine.timeline.SetCanvasCommand
 import uz.selerown.fevapp.engine.timeline.SetClipColorCommand
+import uz.selerown.fevapp.engine.timeline.SetClipTransformCommand
 import uz.selerown.fevapp.engine.timeline.SetClipSpeedCommand
 import uz.selerown.fevapp.engine.timeline.SetClipVolumeCommand
 import uz.selerown.fevapp.engine.timeline.SetTextTimingCommand
@@ -177,7 +179,7 @@ class EditorViewModel @Inject constructor(
 
     private fun openSheet(tool: EditorTool) {
         preview.pause()
-        if (tool == EditorTool.CLIP_FILTER) showSelectedClipInPreview()
+        if (tool == EditorTool.CLIP_FILTER || tool == EditorTool.CROP) showSelectedClipInPreview()
         _state.update { it.copy(openTool = tool) }
     }
 
@@ -440,6 +442,19 @@ class EditorViewModel @Inject constructor(
         val id = _state.value.selectedClipId ?: return
         val clip = current?.mainTrack?.clips?.firstOrNull { it.id == id } ?: return
         preview.previewClipStyle(clip.copy(look = look, color = color))
+    }
+
+    /** Live crop/rotate preview while the sheet is open (nothing is saved). */
+    fun previewTransform(transform: ClipTransform) {
+        val id = _state.value.selectedClipId ?: return
+        val clip = current?.mainTrack?.clips?.firstOrNull { it.id == id } ?: return
+        preview.previewClipStyle(clip.copy(transform = transform))
+    }
+
+    fun setClipTransform(transform: ClipTransform) {
+        val id = _state.value.selectedClipId
+        closeTool()
+        execute(SetClipTransformCommand(id ?: return, transform))
     }
 
     fun setClipColor(look: ClipLook, color: ColorAdjust, applyToAll: Boolean) {

@@ -46,6 +46,7 @@
     <string name="tool_move_right">Oʻngga</string>
     <string name="tool_volume">Ovoz</string>
     <string name="tool_reverse">Teskari</string>
+    <string name="tool_crop">Qirqish</string>
     <string name="tool_transition">Oʻtish</string>
     <string name="tool_extract_audio">Ovozni ajratish</string>
 
@@ -114,6 +115,17 @@
     <string name="adjust_saturation">Toʻyinganlik</string>
     <string name="adjust_warmth">Iliqlik</string>
     <string name="value_signed_percent">%1$+d%%</string>
+
+    <!-- Crop sheet -->
+    <string name="crop_rotate">90° burish</string>
+    <string name="crop_flip_h">Gorizontal koʻzgu</string>
+    <string name="crop_flip_v">Vertikal koʻzgu</string>
+    <string name="crop_ratio">Nisbat boʻyicha qirqish (markazdan)</string>
+    <string name="crop_sides">Chetlardan qirqish</string>
+    <string name="crop_left">Chapdan</string>
+    <string name="crop_right">Oʻngdan</string>
+    <string name="crop_top">Tepadan</string>
+    <string name="crop_bottom">Pastdan</string>
 
     <!-- Transition sheet -->
     <string name="transition_type">Turi</string>

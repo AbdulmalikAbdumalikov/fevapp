@@ -30,6 +30,7 @@ import uz.selerown.fevapp.core.designsystem.component.FevToolSheet
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.Keyframe
 import uz.selerown.fevapp.core.model.OverlayClip
@@ -316,5 +317,73 @@ internal fun KeyframeSheet(
             color = FevTheme.colors.textSecondary,
             modifier = Modifier.padding(top = 12.dp),
         )
+    }
+}
+
+private val CropRatios = listOf(
+    0 to 0 to R.string.format_original,
+    9 to 16 to null,
+    1 to 1 to null,
+    16 to 9 to null,
+    4 to 5 to null,
+)
+
+/** Centered crop window of the source that shows [w]:[h] after rotation. */
+private fun centeredCrop(clip: Clip, t: ClipTransform, w: Int, h: Int): ClipTransform {
+    if (w == 0) return t.copy(left = 0f, top = 0f, right = 1f, bottom = 1f)
+    val target = if (t.quarterTurn) h.toFloat() / w else w.toFloat() / h // in source orientation
+    val src = clip.source.width.coerceAtLeast(1).toFloat() / clip.source.height.coerceAtLeast(1)
+    return if (src > target) {
+        val fw = target / src
+        t.copy(left = (1 - fw) / 2, right = (1 + fw) / 2, top = 0f, bottom = 1f)
+    } else {
+        val fh = src / target
+        t.copy(left = 0f, right = 1f, top = (1 - fh) / 2, bottom = (1 + fh) / 2)
+    }
+}
+
+/**
+ * Crop, rotate and mirror the selected clip, shown live in the preview.
+ * Ratio chips crop from the center; sliders trim each side.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun CropSheet(
+    clip: Clip,
+    onPreview: (ClipTransform) -> Unit,
+    onDismiss: () -> Unit,
+    onApply: (ClipTransform) -> Unit,
+) {
+    var t by remember { mutableStateOf(clip.transform) }
+    LaunchedEffect(t) { onPreview(t) }
+    FevToolSheet(
+        title = stringResource(R.string.tool_crop),
+        closeLabel = stringResource(R.string.sheet_close),
+        applyLabel = stringResource(R.string.sheet_apply),
+        onDismiss = onDismiss,
+        onApply = { onApply(t) },
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChoiceChip(stringResource(R.string.crop_rotate), false) { t = t.copy(rotation = (t.rotation + 90) % 360) }
+                ChoiceChip(stringResource(R.string.crop_flip_h), t.flipH) { t = t.copy(flipH = !t.flipH) }
+                ChoiceChip(stringResource(R.string.crop_flip_v), t.flipV) { t = t.copy(flipV = !t.flipV) }
+                ChoiceChip(stringResource(R.string.filter_reset), false) { t = ClipTransform() }
+            }
+            SheetSection(R.string.crop_ratio)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CropRatios.forEach { (ratio, label) ->
+                    val (w, h) = ratio
+                    val text = label?.let { stringResource(it) } ?: "$w:$h"
+                    ChoiceChip(text, false) { t = centeredCrop(clip, t, w, h) }
+                }
+            }
+            SheetSection(R.string.crop_sides)
+            val max = 0.45f
+            FractionSlider(R.string.crop_left, t.left, 0f..max) { t = t.copy(left = it.coerceAtMost(t.right - ClipTransform.MIN_SIZE)) }
+            FractionSlider(R.string.crop_right, 1f - t.right, 0f..max) { t = t.copy(right = (1f - it).coerceAtLeast(t.left + ClipTransform.MIN_SIZE)) }
+            FractionSlider(R.string.crop_top, t.top, 0f..max) { t = t.copy(top = it.coerceAtMost(t.bottom - ClipTransform.MIN_SIZE)) }
+            FractionSlider(R.string.crop_bottom, 1f - t.bottom, 0f..max) { t = t.copy(bottom = (1f - it).coerceAtLeast(t.top + ClipTransform.MIN_SIZE)) }
+        }
     }
 }

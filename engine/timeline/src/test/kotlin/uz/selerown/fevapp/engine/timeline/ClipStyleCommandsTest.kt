@@ -1,6 +1,7 @@
 package uz.selerown.fevapp.engine.timeline
 
 import uz.selerown.fevapp.core.model.ClipLook
+import uz.selerown.fevapp.core.model.ClipTransform
 import uz.selerown.fevapp.core.model.ColorAdjust
 import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.TransitionType
@@ -59,5 +60,19 @@ class ClipStyleCommandsTest {
         assertSame(base, SetTransitionCommand("c", TransitionType.FADE_WHITE, SEC).apply(base))
         val all = SetTransitionCommand(null, TransitionType.FADE_WHITE, SEC).apply(base)
         assertEquals(listOf(TransitionType.FADE_WHITE, TransitionType.FADE_WHITE, TransitionType.NONE), all.mainTrack.clips.map { it.transition })
+    }
+
+    @Test
+    fun `crop and rotation change the display size and are clamped`() {
+        // sample clips are 1080x1920
+        val t = ClipTransform(left = 0.25f, right = 0.75f, rotation = 450, top = 0.9f, bottom = 0.95f)
+        val clip = SetClipTransformCommand("a", t).apply(sampleProject()).mainTrack.clips[0]
+        assertEquals(90, clip.transform.rotation)
+        assertEquals(0.9f, clip.transform.top)
+        assertEquals(1f, clip.transform.bottom) // at least MIN_SIZE tall
+        assertEquals(192, clip.displayWidth) // rotated: cropped height (1920 * 0.1)
+        assertEquals(540, clip.displayHeight) // rotated: cropped width (1080 * 0.5)
+        val base = sampleProject()
+        assertSame(base, SetClipTransformCommand("a", ClipTransform()).apply(base))
     }
 }

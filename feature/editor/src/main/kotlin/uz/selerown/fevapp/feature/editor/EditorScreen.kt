@@ -47,6 +47,7 @@ internal fun EditorScreen(
     val positionUs = { positionState.value }
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val colorMatrix by viewModel.preview.colorMatrix.collectAsStateWithLifecycle()
+    val frameClip by viewModel.preview.frameClip.collectAsStateWithLifecycle()
     val waveforms by viewModel.waveforms.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -120,6 +121,7 @@ internal fun EditorScreen(
                 project = project,
                 positionUs = positionUs,
                 colorMatrix = colorMatrix,
+                frameClip = frameClip,
                 selectedTextId = state.selection?.takeIf { it.lane == Lane.TEXT }?.id,
                 textDraft = state.textDraft,
                 onTextTransform = viewModel::onTextTransform,
@@ -152,6 +154,7 @@ internal fun EditorScreen(
                     project = project,
                     positionUs = positionUs,
                     colorMatrix = colorMatrix,
+                    frameClip = frameClip,
                     selectedTextId = state.selection?.takeIf { it.lane == Lane.TEXT }?.id,
                     textDraft = state.textDraft,
                     onTextTransform = viewModel::onTextTransform,
@@ -238,6 +241,8 @@ internal fun EditorScreen(
             onSetColor = viewModel::setClipColor,
             onSetTransition = viewModel::setTransition,
             onSetOverlayTransform = viewModel::setOverlayTransform,
+            onPreviewTransform = viewModel::previewTransform,
+            onSetTransform = viewModel::setClipTransform,
             positionUs = positionState.value,
             onSaveKeyframe = viewModel::saveKeyframe,
             onDeleteKeyframe = viewModel::deleteKeyframeHere,
