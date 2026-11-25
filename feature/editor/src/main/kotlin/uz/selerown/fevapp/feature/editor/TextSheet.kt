@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import uz.selerown.fevapp.core.designsystem.component.FevToolSheet
 import uz.selerown.fevapp.core.designsystem.theme.FevDimens
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
+import uz.selerown.fevapp.core.model.TextAnimation
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextFont
 import uz.selerown.fevapp.core.model.TextStyle
@@ -65,6 +66,13 @@ private val Positions = listOf(
     0.15f to R.string.position_top,
     0.5f to R.string.position_middle,
     0.8f to R.string.position_bottom,
+)
+
+private val Animations = listOf(
+    TextAnimation.NONE to R.string.anim_none,
+    TextAnimation.FADE to R.string.anim_fade,
+    TextAnimation.POP to R.string.anim_pop,
+    TextAnimation.SLIDE_UP to R.string.anim_slide,
 )
 
 private val Fonts = listOf(
@@ -137,6 +145,13 @@ internal fun TextSheet(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Fonts.forEach { (font, label) ->
                     ChoiceChip(stringResource(label), style.font == font) { style = style.copy(font = font) }
+                }
+            }
+
+            SheetSection(R.string.text_animation)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Animations.forEach { (anim, label) ->
+                    ChoiceChip(stringResource(label), style.animation == anim) { style = style.copy(animation = anim) }
                 }
             }
 

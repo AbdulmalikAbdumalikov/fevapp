@@ -7,6 +7,10 @@ import kotlinx.serialization.Serializable
  * clips they keep their own timeline start time and may overlap.
  */
 
+/** In/out animation of a text clip (original, simple motions). */
+@Serializable
+enum class TextAnimation { NONE, FADE, POP, SLIDE_UP }
+
 /** Generic font families available on every device (no downloads). */
 @Serializable
 enum class TextFont { SANS, SERIF, MONO }
@@ -27,6 +31,8 @@ data class TextStyle(
     val bold: Boolean = true,
     /** Vertical center of the text: 0 = top, 1 = bottom. */
     val positionY: Float = 0.8f,
+    /** How the text appears and disappears. */
+    val animation: TextAnimation = TextAnimation.NONE,
 ) {
     companion object {
         const val MIN_SIZE = 0.03f

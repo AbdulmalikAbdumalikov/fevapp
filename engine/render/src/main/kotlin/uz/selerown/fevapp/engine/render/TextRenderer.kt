@@ -1,12 +1,14 @@
 package uz.selerown.fevapp.engine.render
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import uz.selerown.fevapp.core.model.TextAnimation
 import uz.selerown.fevapp.core.model.TextClip
 import uz.selerown.fevapp.core.model.TextFont
 import kotlin.math.min
@@ -22,14 +24,44 @@ object TextRenderer {
     private const val BOX_COLOR = 0x99000000.toInt()
     private const val SHADOW_COLOR = 0xAA000000.toInt()
 
-    private val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = BOX_COLOR }
+    /** Length of the in and out parts of an animation. */
+    const val ANIMATION_US = 400_000L
 
-    fun draw(canvas: Canvas, width: Int, height: Int, clips: List<TextClip>) {
-        if (width <= 0 || height <= 0) return
-        clips.forEach { drawOne(canvas, width, height, it) }
+    /** Alpha (0..1), scale and vertical shift (fraction of height) of a clip at a time. */
+    data class Motion(val alpha: Float, val scale: Float, val shiftY: Float) {
+        companion object {
+            val STILL = Motion(1f, 1f, 0f)
+        }
     }
 
-    private fun drawOne(canvas: Canvas, width: Int, height: Int, clip: TextClip) {
+    /** Where [clip] is in its animation at timeline time [timeUs] (null = no animation). */
+    fun motion(clip: TextClip, timeUs: Long?): Motion {
+        if (timeUs == null || clip.style.animation == TextAnimation.NONE) return Motion.STILL
+        val length = minOf(ANIMATION_US, clip.durationUs / 2).coerceAtLeast(1)
+        val inT = ((timeUs - clip.startUs).toFloat() / length).coerceIn(0f, 1f)
+        val outT = ((clip.endUs - timeUs).toFloat() / length).coerceIn(0f, 1f)
+        val ease = { t: Float -> 1f - (1f - t) * (1f - t) } // ease-out
+        val visible = minOf(ease(inT), ease(outT))
+        return when (clip.style.animation) {
+            TextAnimation.NONE -> Motion.STILL
+            TextAnimation.FADE -> Motion(visible, 1f, 0f)
+            TextAnimation.POP -> Motion(visible, 0.6f + 0.4f * ease(inT), 0f)
+            TextAnimation.SLIDE_UP -> Motion(visible, 1f, 0.06f * (1f - ease(inT)))
+        }
+    }
+
+    /**
+     * Draws [clips]. With [timeUs] (timeline time) in/out animations are
+     * applied; without it every clip is drawn still.
+     */
+    fun draw(canvas: Canvas, width: Int, height: Int, clips: List<TextClip>, timeUs: Long? = null) {
+        if (width <= 0 || height <= 0) return
+        clips.forEach { drawOne(canvas, width, height, it, motion(it, timeUs)) }
+    }
+
+    private fun drawOne(canvas: Canvas, width: Int, height: Int, clip: TextClip, motion: Motion) {
+        if (motion.alpha <= 0f) return
+        val alpha = (motion.alpha * 255).toInt()
         val style = clip.style
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = style.color
@@ -37,6 +69,11 @@ object TextRenderer {
             typeface = typeface(style.font, style.bold)
             // Without a box, a soft shadow keeps text readable on bright video.
             if (!style.background) setShadowLayer(textSize * 0.08f, 0f, 0f, SHADOW_COLOR)
+            this.alpha = Color.alpha(style.color) * alpha / 255
+        }
+        val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = BOX_COLOR
+            this.alpha = Color.alpha(BOX_COLOR) * alpha / 255
         }
         val layoutWidth = (width * MAX_WIDTH).toInt()
         val layout = StaticLayout.Builder.obtain(clip.text, 0, clip.text.length, paint, layoutWidth)
@@ -45,7 +82,9 @@ object TextRenderer {
             .build()
         val left = (width - layoutWidth) / 2f
         val top = (style.positionY * height - layout.height / 2f)
-            .coerceIn(0f, (height - layout.height).coerceAtLeast(0).toFloat())
+            .coerceIn(0f, (height - layout.height).coerceAtLeast(0).toFloat()) + motion.shiftY * height
+        canvas.save()
+        canvas.scale(motion.scale, motion.scale, width / 2f, top + layout.height / 2f)
 
         if (style.background) {
             val contentWidth = (0 until layout.lineCount).maxOf { layout.getLineWidth(it) }
@@ -58,7 +97,6 @@ object TextRenderer {
             )
             canvas.drawRoundRect(box, pad, pad, boxPaint)
         }
-        canvas.save()
         canvas.translate(left, top)
         layout.draw(canvas)
         canvas.restore()

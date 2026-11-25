@@ -116,7 +116,7 @@ private fun TextLayer(project: Project, positionUs: Long, modifier: Modifier) {
         val width = if (fitsWidth) maxWidth else maxHeight * ratio
         val height = if (fitsWidth) maxWidth / ratio else maxHeight
         Canvas(Modifier.align(Alignment.Center).size(width, height)) {
-            drawIntoCanvas { TextRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), visible) }
+            drawIntoCanvas { TextRenderer.draw(it.nativeCanvas, size.width.toInt(), size.height.toInt(), visible, positionUs) }
         }
     }
 }

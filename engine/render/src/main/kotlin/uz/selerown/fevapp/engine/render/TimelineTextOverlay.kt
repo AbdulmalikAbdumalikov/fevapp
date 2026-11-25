@@ -24,18 +24,22 @@ internal class TimelineTextOverlay(
 ) : BitmapOverlay() {
 
     private var firstTimestampUs: Long? = null
-    private var lastKey: List<String>? = null
+    private var lastKey: List<Any>? = null
     private var lastBitmap: Bitmap? = null
 
     override fun getBitmap(presentationTimeUs: Long): Bitmap {
         val base = firstTimestampUs ?: presentationTimeUs.also { firstTimestampUs = it }
         val timelineUs = itemStartUs + (presentationTimeUs - base)
         val visible = texts.filter { it.isVisibleAt(timelineUs) }
-        val key = visible.map { it.id }
+        // Redraw when the set of texts changes or an animation moves (~30 steps).
+        val key = visible.map { clip ->
+            val m = TextRenderer.motion(clip, timelineUs)
+            listOf(clip.id, (m.alpha * 30).toInt(), (m.scale * 30).toInt(), (m.shiftY * 300).toInt())
+        }
         lastBitmap?.let { if (key == lastKey) return it }
         // A new bitmap (not a redraw) so the overlay knows to upload it again.
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        TextRenderer.draw(Canvas(bitmap), width, height, visible)
+        TextRenderer.draw(Canvas(bitmap), width, height, visible, timelineUs)
         lastKey = key
         lastBitmap = bitmap
         return bitmap

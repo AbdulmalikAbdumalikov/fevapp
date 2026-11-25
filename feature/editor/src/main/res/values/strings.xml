@@ -67,6 +67,11 @@
     <string name="font_sans">Oddiy</string>
     <string name="font_serif">Serif</string>
     <string name="font_mono">Mono</string>
+    <string name="text_animation">Animatsiya</string>
+    <string name="anim_none">Yoʻq</string>
+    <string name="anim_fade">Asta paydo boʻlish</string>
+    <string name="anim_pop">Kattalashib chiqish</string>
+    <string name="anim_slide">Pastdan chiqish</string>
     <string name="text_position">Joylashuv</string>
     <string name="position_top">Tepa</string>
     <string name="position_middle">Oʻrta</string>
