@@ -60,6 +60,8 @@ import uz.selerown.fevapp.engine.timeline.MoveAudioCommand
 import uz.selerown.fevapp.engine.timeline.MoveClipCommand
 import uz.selerown.fevapp.engine.timeline.SetAudioMixCommand
 import uz.selerown.fevapp.engine.timeline.SetCanvasCommand
+import uz.selerown.fevapp.engine.timeline.FreezeFrameCommand
+import uz.selerown.fevapp.engine.timeline.ReplaceClipCommand
 import uz.selerown.fevapp.engine.timeline.SetClipColorCommand
 import uz.selerown.fevapp.engine.timeline.SetClipTransformCommand
 import uz.selerown.fevapp.engine.timeline.SetClipSpeedCommand
@@ -164,6 +166,10 @@ class EditorViewModel @Inject constructor(
             EditorTool.EDIT -> selectClipAtPlayhead()
             EditorTool.OVERLAY -> viewModelScope.launch { _events.send(EditorEvent.PickOverlay) }
             EditorTool.ADD_MEDIA -> viewModelScope.launch { _events.send(EditorEvent.PickMediaAtPlayhead) }
+            EditorTool.FREEZE -> freezeFrame()
+            EditorTool.REPLACE -> if (_state.value.selectedClipId != null) {
+                viewModelScope.launch { _events.send(EditorEvent.PickReplacement) }
+            }
             EditorTool.SPEED -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_SPEED)
             EditorTool.FILTER -> if (selectClipAtPlayhead()) openSheet(EditorTool.CLIP_FILTER)
             EditorTool.SPLIT -> split(selection)
@@ -442,6 +448,43 @@ class EditorViewModel @Inject constructor(
         val id = _state.value.selectedClipId ?: return
         val clip = current?.mainTrack?.clips?.firstOrNull { it.id == id } ?: return
         preview.previewClipStyle(clip.copy(look = look, color = color))
+    }
+
+    /** Freeze frame at the playhead inside the selected clip. */
+    private fun freezeFrame() {
+        val id = _state.value.selectedClipId ?: return
+        val project = current ?: return
+        val at = TimelineRules.clipAt(project.mainTrack, positionUs.value)
+        if (at == null || at.clip.id != id) {
+            message(R.string.msg_playhead_outside)
+            return
+        }
+        preview.pause()
+        viewModelScope.launch {
+            _state.update { it.copy(importing = true) }
+            val frame = importer.grabFrame(at.clip, at.clip.sourceTimeAt(at.offsetUs))
+            _state.update { it.copy(importing = false) }
+            if (frame == null) {
+                message(R.string.msg_freeze_failed)
+                return@launch
+            }
+            val freezeId = ids.newId()
+            if (execute(FreezeFrameCommand(id, positionUs.value, frame, freezeId, ids.newId()))) {
+                select(Selection(Lane.MAIN, freezeId))
+            }
+        }
+    }
+
+    /** Replaces the selected clip's media, keeping its place and settings. */
+    fun replaceClip(uri: Uri?) {
+        uri ?: return
+        val id = _state.value.selectedClipId ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(importing = true) }
+            val clip = importer.import(listOf(uri)).firstOrNull()
+            _state.update { it.copy(importing = false) }
+            if (clip == null) message(R.string.msg_import_failed) else execute(ReplaceClipCommand(id, clip.source))
+        }
     }
 
     /** Live crop/rotate preview while the sheet is open (nothing is saved). */

@@ -63,4 +63,7 @@ sealed interface EditorEvent {
 
     /** Ask the screen to open the Photo Picker; picked clips go in at the playhead. */
     data object PickMediaAtPlayhead : EditorEvent
+
+    /** Ask the screen to open the Photo Picker to replace the selected clip. */
+    data object PickReplacement : EditorEvent
 }

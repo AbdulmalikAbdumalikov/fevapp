@@ -16,8 +16,8 @@ Qiyinlik: **O** — oson (1 kun), **O'** — o'rtacha, **Q** — qiyin (alohida 
 | Kesish (trim), bo'lish, o'chirish, nusxa, tartib | ✅ | — | |
 | Undo / redo | ✅ | — | |
 | Playhead joyiga qo'shish, "+" tugma | ✅ | — | |
-| Klipni almashtirish (replace) | ⬜ | O | Joyi va effektlari saqlanib, manba almashadi |
-| Kadrni muzlatish (freeze frame) | ⬜ | O | Kadrni rasm qilib ajratib, rasm klipi sifatida qo'yish |
+| Klipni almashtirish (replace) | ✅ | — | Joyi, uzunligi, ovozi, filtri, o'tishi saqlanadi |
+| Kadrni muzlatish (freeze frame) | ✅ | — | 3 s lik kadr, filtr va qirqish saqlanadi |
 | Kesish/aylantirish/ko'zgu (crop, rotate, flip) | ✅ | — | Nisbat chiplari, chetlar, 90° burish, ko'zgu |
 | Tezlik (doimiy) | 🟡 | — | 0.25×–4×; boshqalarda 0.1×–100× |
 | Tezlik egri chizig'i (speed curve) | ⬜ | O' | `SpeedProvider` vaqtga qarab |

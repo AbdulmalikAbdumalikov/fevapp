@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.ClosedCaption
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.rounded.OpenWith
 import androidx.compose.material.icons.rounded.PictureInPicture
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material.icons.rounded.VerticalSplit
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -63,6 +65,8 @@ enum class EditorTool(
     CLIP_SPEED(R.string.tool_speed, Icons.Rounded.Speed, true),
     CLIP_FILTER(R.string.tool_filter, Icons.Rounded.Filter, true),
     CROP(R.string.tool_crop, Icons.Rounded.Crop, true),
+    FREEZE(R.string.tool_freeze, Icons.Rounded.AcUnit, false),
+    REPLACE(R.string.tool_replace, Icons.Rounded.SwapHoriz, false),
     TRANSITION(R.string.tool_transition, Icons.Rounded.Animation, true),
     REVERSE(R.string.tool_reverse, Icons.Rounded.FastRewind, true),
 
@@ -80,7 +84,7 @@ enum class EditorTool(
         val mainTools = listOf(ADD_MEDIA, EDIT, AUDIO, TEXT, OVERLAY, FILTER, SPEED, CAPTIONS, FORMAT)
 
         /** Move left/right are the visible alternative to long-press dragging. */
-        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, CROP, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)
+        val clipTools = listOf(SPLIT, DELETE, DUPLICATE, CROP, FREEZE, REPLACE, MOVE_LEFT, MOVE_RIGHT, CLIP_SPEED, CLIP_FILTER, TRANSITION, VOLUME, EXTRACT_AUDIO, REVERSE)
 
         val textTools = listOf(TEXT_EDIT, KEYFRAME, DUPLICATE, DELETE, MOVE_HERE, START_HERE, END_HERE)
 

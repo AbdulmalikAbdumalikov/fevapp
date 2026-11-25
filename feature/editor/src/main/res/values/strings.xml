@@ -47,6 +47,8 @@
     <string name="tool_volume">Ovoz</string>
     <string name="tool_reverse">Teskari</string>
     <string name="tool_crop">Qirqish</string>
+    <string name="tool_freeze">Muzlatish</string>
+    <string name="tool_replace">Almashtirish</string>
     <string name="tool_transition">Oʻtish</string>
     <string name="tool_extract_audio">Ovozni ajratish</string>
 
@@ -180,6 +182,7 @@
     <string name="msg_speed_photo">Rasm uchun tezlik yoʻq. Uzunligini kesish bilan oʻzgartiring.</string>
     <string name="msg_record_failed">Ovoz yozib boʻlmadi. Mikrofon boshqa ilovada band boʻlishi mumkin.</string>
     <string name="msg_transition_last">Oxirgi klipdan keyin oʻtish yoʻq. Undan oldingi klipni tanlang.</string>
+    <string name="msg_freeze_failed">Bu kadrni olib boʻlmadi</string>
     <string name="msg_text_empty">Matn boʻsh boʻlmasligi kerak</string>
     <string name="msg_empty_export">Eksport uchun avval klip qoʻshing</string>
 </resources>

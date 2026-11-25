@@ -2,7 +2,9 @@ package uz.selerown.fevapp.engine.render
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -14,6 +16,7 @@ import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.MediaSource
 import uz.selerown.fevapp.core.model.MediaType
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -47,6 +50,43 @@ class MediaImporter @Inject constructor(
                 trimStartUs = 0L,
                 trimEndUs = source.durationUs,
             )
+        }.getOrNull()
+    }
+
+    /**
+     * Saves the picture of [clip] at source time [sourceUs] as a JPEG in app
+     * storage and returns it as an image source (for freeze frame). Photos are
+     * returned as they are. Null when the frame cannot be read.
+     */
+    suspend fun grabFrame(clip: Clip, sourceUs: Long): MediaSource? = withContext(Dispatchers.IO) {
+        if (clip.source.type == MediaType.IMAGE) return@withContext clip.source
+        runCatching {
+            val retriever = MediaMetadataRetriever()
+            try {
+                retriever.setDataSource(context, Uri.parse(clip.source.uri))
+                var frame = retriever.getFrameAtTime(sourceUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                    ?: return@runCatching null
+                // Some devices return the frame without the video's rotation: turn it if needed.
+                val wantPortrait = clip.source.height > clip.source.width
+                if ((frame.height > frame.width) != wantPortrait) {
+                    val degrees = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                        ?.toFloatOrNull() ?: 90f
+                    val m = Matrix().apply { postRotate(degrees) }
+                    frame = Bitmap.createBitmap(frame, 0, 0, frame.width, frame.height, m, true)
+                }
+                val dir = File(context.filesDir, "frames").apply { mkdirs() }
+                val file = File(dir, "frame_${System.currentTimeMillis()}.jpg")
+                file.outputStream().use { frame.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                MediaSource(
+                    uri = Uri.fromFile(file).toString(),
+                    type = MediaType.IMAGE,
+                    durationUs = Clip.MAX_IMAGE_DURATION_US,
+                    width = frame.width,
+                    height = frame.height,
+                )
+            } finally {
+                retriever.release()
+            }
         }.getOrNull()
     }
 

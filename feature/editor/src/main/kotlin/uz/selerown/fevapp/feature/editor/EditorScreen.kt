@@ -55,6 +55,9 @@ internal fun EditorScreen(
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var pxPerSecond by rememberSaveable { mutableFloatStateOf(TimelineZoom.DEFAULT_DP_PER_SECOND) }
 
+    val replacePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        viewModel.replaceClip(uri)
+    }
     val insertPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         viewModel.addClips(uris, atPlayhead = true)
     }
@@ -93,6 +96,8 @@ internal fun EditorScreen(
                 is EditorEvent.Message -> snackbar.showSnackbar(context.getString(event.text))
                 is EditorEvent.OpenExport -> onExport(event.projectId)
                 EditorEvent.Close -> onBack()
+                EditorEvent.PickReplacement ->
+                    replacePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                 EditorEvent.PickMediaAtPlayhead ->
                     insertPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                 EditorEvent.PickOverlay ->

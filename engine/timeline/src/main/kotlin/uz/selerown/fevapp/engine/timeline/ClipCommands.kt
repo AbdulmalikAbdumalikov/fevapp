@@ -1,7 +1,10 @@
 package uz.selerown.fevapp.engine.timeline
 
 import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.MediaSource
+import uz.selerown.fevapp.core.model.MediaType
 import uz.selerown.fevapp.core.model.Project
+import uz.selerown.fevapp.core.model.TransitionType
 
 /*
  * Main-track clip commands for milestone 1.
@@ -115,5 +118,90 @@ class DuplicateClipCommand(
         return project.updateMainTrack { t ->
             t.copy(clips = t.clips.toMutableList().apply { add(index + 1, copy) })
         }
+    }
+}
+
+/**
+ * Freeze frame: splits [clipId] at [atTimeUs] and puts a still picture of
+ * that moment ([frame], an image file) in between for [Clip.DEFAULT_IMAGE_DURATION_US].
+ * Near an edge the still goes before/after the clip instead of splitting.
+ * The still keeps the clip's look, color and crop.
+ */
+class FreezeFrameCommand(
+    private val clipId: String,
+    private val atTimeUs: Long,
+    private val frame: MediaSource,
+    private val freezeId: String,
+    private val secondPartId: String,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val position = TimelineRules.clipAt(project.mainTrack, atTimeUs) ?: return project
+        if (position.clip.id != clipId) return project
+        val clip = position.clip
+        val still = Clip(
+            id = freezeId,
+            source = frame,
+            trimStartUs = 0L,
+            trimEndUs = Clip.DEFAULT_IMAGE_DURATION_US,
+            look = clip.look,
+            color = clip.color,
+            transform = clip.transform,
+        )
+        val offset = position.offsetUs
+        val parts = when {
+            offset < Clip.MIN_DURATION_US -> listOf(still, clip)
+            clip.durationUs - offset < Clip.MIN_DURATION_US -> listOf(clip, still)
+            else -> {
+                val cut = clip.sourceTimeAt(offset)
+                // The transition moves to the end of the second part.
+                listOf(
+                    clip.copy(trimEndUs = cut, transition = TransitionType.NONE),
+                    still,
+                    clip.copy(id = secondPartId, trimStartUs = cut),
+                )
+            }
+        }
+        return project.updateMainTrack { t ->
+            t.copy(clips = t.clips.toMutableList().apply {
+                removeAt(position.index)
+                addAll(position.index, parts)
+            })
+        }
+    }
+}
+
+/**
+ * Replaces the media of [clipId] with [source], keeping its place, length
+ * (when the new file is long enough), volume, color, transition and speed
+ * (videos only). Crop is reset because the new picture has another shape.
+ */
+class ReplaceClipCommand(
+    private val clipId: String,
+    private val source: MediaSource,
+) : TimelineCommand {
+    override fun apply(project: Project): Project {
+        val index = project.mainTrack.indexOf(clipId)
+        if (index < 0) return project
+        val old = project.mainTrack.clips[index]
+        val updated = if (source.type == MediaType.IMAGE) {
+            old.copy(
+                source = source,
+                trimStartUs = 0L,
+                trimEndUs = old.durationUs.coerceIn(Clip.MIN_DURATION_US, Clip.MAX_IMAGE_DURATION_US),
+                speed = 1f,
+                transform = old.transform.copy(left = 0f, top = 0f, right = 1f, bottom = 1f),
+            )
+        } else {
+            val speed = if (old.source.type == MediaType.VIDEO) old.speed else 1f
+            val wanted = (old.durationUs * speed).toLong()
+            old.copy(
+                source = source,
+                trimStartUs = 0L,
+                trimEndUs = wanted.coerceIn(Clip.MIN_DURATION_US, source.durationUs),
+                speed = speed,
+                transform = old.transform.copy(left = 0f, top = 0f, right = 1f, bottom = 1f),
+            )
+        }
+        return project.updateMainTrack { t -> t.copy(clips = t.clips.toMutableList().apply { set(index, updated) }) }
     }
 }

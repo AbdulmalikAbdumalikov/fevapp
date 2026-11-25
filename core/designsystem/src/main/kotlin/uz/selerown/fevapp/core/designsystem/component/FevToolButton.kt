@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,9 +23,8 @@ import uz.selerown.fevapp.core.designsystem.theme.FevDimens
 import uz.selerown.fevapp.core.designsystem.theme.FevTheme
 
 /**
- * Bottom-toolbar tool: icon ABOVE a text label (never icon-only). Fixed
- * 72 dp wide (long labels wrap to two small lines instead of widening the
- * button) and at least 56 dp tall — still well above the 48 dp target.
+ * Bottom-toolbar tool: icon ABOVE a text label (never icon-only). 72–96 dp
+ * wide (long labels wrap to two small lines; a long single word still fits) and at least 56 dp tall — still well above the 48 dp target.
  */
 @Composable
 fun FevToolButton(
@@ -44,7 +43,7 @@ fun FevToolButton(
     }
     Column(
         modifier = modifier
-            .width(72.dp)
+            .widthIn(min = 72.dp, max = 96.dp) // long single words fit instead of breaking
             .sizeIn(minHeight = 56.dp)
             .clip(FevDimens.SmallShape)
             .selectable(selected = selected, enabled = enabled, role = Role.Button, onClick = onClick)

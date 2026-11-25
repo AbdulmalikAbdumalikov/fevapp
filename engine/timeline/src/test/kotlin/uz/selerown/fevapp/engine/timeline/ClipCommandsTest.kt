@@ -1,5 +1,8 @@
 package uz.selerown.fevapp.engine.timeline
 
+import uz.selerown.fevapp.core.model.Clip
+import uz.selerown.fevapp.core.model.MediaSource
+import uz.selerown.fevapp.core.model.MediaType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -95,5 +98,33 @@ class ClipCommandsTest {
         assertEquals("c", pos.clip.id)
         assertEquals(8 * SEC, pos.startUs)
         assertEquals(1 * SEC, pos.offsetUs)
+    }
+
+    private val still = MediaSource("file://frame.png", MediaType.IMAGE, Clip.MAX_IMAGE_DURATION_US, 1080, 1920)
+
+    @Test
+    fun `freeze frame splits and inserts a 3 s still`() {
+        val p = FreezeFrameCommand("a", 2 * SEC, still, "f", "a2").apply(sampleProject())
+        assertEquals(listOf("a", "f", "a2", "b", "c"), p.ids())
+        assertEquals(2 * SEC, p.mainTrack.clips[0].trimEndUs)
+        assertEquals(3 * SEC, p.mainTrack.clips[1].durationUs)
+        assertEquals(15 * SEC, p.durationUs) // 12 s + 3 s still
+    }
+
+    @Test
+    fun `freeze at the start of a clip goes before it`() {
+        val p = FreezeFrameCommand("b", 5 * SEC, still, "f", "x").apply(sampleProject())
+        assertEquals(listOf("a", "f", "b", "c"), p.ids())
+    }
+
+    @Test
+    fun `replace keeps length when the new video is long enough`() {
+        val longer = MediaSource("content://new", MediaType.VIDEO, 60 * SEC, 1920, 1080)
+        val p = ReplaceClipCommand("b", longer).apply(sampleProject())
+        assertEquals("content://new", p.mainTrack.clips[1].source.uri)
+        assertEquals(3 * SEC, p.mainTrack.clips[1].durationUs)
+        val shorter = MediaSource("content://short", MediaType.VIDEO, SEC, 1920, 1080)
+        assertEquals(SEC, ReplaceClipCommand("b", shorter).apply(sampleProject()).mainTrack.clips[1].durationUs)
+        assertEquals(3 * SEC, ReplaceClipCommand("b", still).apply(sampleProject()).mainTrack.clips[1].durationUs)
     }
 }
