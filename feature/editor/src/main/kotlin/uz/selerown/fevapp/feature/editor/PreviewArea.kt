@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.stringResource
@@ -54,7 +55,20 @@ internal fun PreviewArea(
     onToggleFullscreen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier.background(FevTheme.colors.background)) {
+    val (rw, rh) = project.frameRatio()
+    val ratio = rw.toFloat() / rh
+    BoxWithConstraints(modifier.background(FevTheme.colors.background)) {
+        // The video frame has the project's output shape (like the export):
+        // clips are fitted inside it and the bars are black, as in the file.
+        val fitsWidth = ratio > maxWidth / maxHeight
+        val frameWidth = if (fitsWidth) maxWidth else maxHeight * ratio
+        val frameHeight = if (fitsWidth) maxWidth / ratio else maxHeight
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .size(frameWidth, frameHeight)
+                .background(Color.Black), // video content color, not a UI color
+        ) {
         AndroidView(
             factory = { ctx ->
                 (LayoutInflater.from(ctx).inflate(R.layout.preview_player_view, null) as PlayerView).apply {
@@ -82,6 +96,7 @@ internal fun PreviewArea(
                 ),
         )
         TextLayer(project, positionUs, Modifier.fillMaxSize())
+        }
         if (fullscreen) {
             PlayButton(isPlaying, onTogglePlay, Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
             FevIconButton(
