@@ -2,6 +2,7 @@ package uz.selerown.fevapp.engine.render
 
 import android.net.Uri
 import androidx.media3.common.MediaItem
+import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.MediaType
 
@@ -17,7 +18,7 @@ object TimelineMapper {
             .setMediaId(clip.id)
         return when (clip.source.type) {
             MediaType.IMAGE -> builder.setImageDurationMs(clip.durationUs / 1000).build()
-            MediaType.VIDEO -> builder.setClippingConfiguration(
+            MediaType.VIDEO, MediaType.AUDIO -> builder.setClippingConfiguration(
                 MediaItem.ClippingConfiguration.Builder()
                     .setStartPositionMs(clip.trimStartUs / 1000)
                     .setEndPositionMs(clip.trimEndUs / 1000)
@@ -25,6 +26,18 @@ object TimelineMapper {
             ).build()
         }
     }
+
+    /** Audio-lane clip -> its sound window (video sources are played sound-only). */
+    fun toMediaItem(clip: AudioClip): MediaItem = MediaItem.Builder()
+        .setUri(Uri.parse(clip.source.uri))
+        .setMediaId(clip.id)
+        .setClippingConfiguration(
+            MediaItem.ClippingConfiguration.Builder()
+                .setStartPositionMs(clip.trimStartUs / 1000)
+                .setEndPositionMs(clip.trimEndUs / 1000)
+                .build(),
+        )
+        .build()
 
     /** Timeline time -> (playlist index, position inside the item in ms). */
     fun locate(clips: List<Clip>, timeUs: Long): Pair<Int, Long> {

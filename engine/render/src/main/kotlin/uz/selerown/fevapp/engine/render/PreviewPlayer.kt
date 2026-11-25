@@ -1,25 +1,32 @@
 package uz.selerown.fevapp.engine.render
 
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import uz.selerown.fevapp.core.model.AudioClip
 import uz.selerown.fevapp.core.model.Clip
 import uz.selerown.fevapp.core.model.Project
+import kotlin.math.abs
 
 /**
- * Preview playback of the main track with ExoPlayer (one playlist item per
- * clip). Exposes the playhead in TIMELINE microseconds so the UI never deals
- * with playlist indexes. Must be used from the main thread.
+ * Preview playback with ExoPlayer.
+ * - main track: one player, one playlist item per clip (clip volume applied)
+ * - audio lane: one small sound-only player per audio clip, kept in sync with
+ *   the main playhead on every [tick] (volume and fades applied live)
+ * Exposes the playhead in TIMELINE microseconds so the UI never deals with
+ * playlist indexes. Must be used from the main thread.
  */
-class PreviewPlayer(context: Context) {
+class PreviewPlayer(private val context: Context) {
 
     val player: ExoPlayer = ExoPlayer.Builder(context).build()
 
     private var clips: List<Clip> = emptyList()
     private var durationUs: Long = 0L
+    private val lanePlayers = mutableMapOf<String, LanePlayer>()
 
     private val _positionUs = MutableStateFlow(0L)
     val positionUs: StateFlow<Long> = _positionUs.asStateFlow()
@@ -31,6 +38,7 @@ class PreviewPlayer(context: Context) {
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.value = isPlaying
+                if (!isPlaying) pauseLanes()
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -42,13 +50,14 @@ class PreviewPlayer(context: Context) {
         })
     }
 
-    /** Loads the project's main track, keeping the playhead at [timeUs]. */
+    /** Loads the project, keeping the playhead at [timeUs]. */
     fun setProject(project: Project, timeUs: Long) {
         val newClips = project.mainTrack.clips
         clips = newClips
         durationUs = project.durationUs
         val clamped = timeUs.coerceIn(0L, durationUs)
         _positionUs.value = clamped
+        updateLanePlayers(project.audioClips)
         if (newClips.isEmpty()) {
             player.clearMediaItems()
             return
@@ -56,6 +65,7 @@ class PreviewPlayer(context: Context) {
         val (index, posMs) = TimelineMapper.locate(newClips, clamped)
         player.setMediaItems(newClips.map(TimelineMapper::toMediaItem), index, posMs)
         player.prepare()
+        applyClipVolume()
     }
 
     fun play() {
@@ -64,7 +74,10 @@ class PreviewPlayer(context: Context) {
         player.play()
     }
 
-    fun pause() = player.pause()
+    fun pause() {
+        player.pause()
+        pauseLanes()
+    }
 
     fun togglePlay() = if (player.isPlaying) pause() else play()
 
@@ -77,11 +90,89 @@ class PreviewPlayer(context: Context) {
         player.seekTo(index, posMs)
     }
 
-    /** Call regularly (~30x/s) while playing to update [positionUs]. */
+    /** Call regularly (~30x/s) to update [positionUs] and keep the audio lane in sync. */
     fun tick() {
-        if (!player.isPlaying || clips.isEmpty()) return
-        _positionUs.value = TimelineMapper.toTimelineUs(clips, player.currentMediaItemIndex, player.currentPosition)
+        if (clips.isEmpty()) return
+        if (player.isPlaying) {
+            _positionUs.value = TimelineMapper.toTimelineUs(clips, player.currentMediaItemIndex, player.currentPosition)
+        }
+        applyClipVolume()
+        syncLanes()
     }
 
-    fun release() = player.release()
+    fun release() {
+        player.release()
+        lanePlayers.values.forEach { it.exo.release() }
+        lanePlayers.clear()
+    }
+
+    // ---- Main-track volume ----------------------------------------------
+
+    private fun applyClipVolume() {
+        player.volume = clips.getOrNull(player.currentMediaItemIndex)?.volume ?: 1f
+    }
+
+    // ---- Audio lane -------------------------------------------------------
+
+    private class LanePlayer(var clip: AudioClip, val exo: ExoPlayer)
+
+    private fun updateLanePlayers(audio: List<AudioClip>) {
+        val ids = audio.map { it.id }.toSet()
+        lanePlayers.keys.filter { it !in ids }.forEach { lanePlayers.remove(it)?.exo?.release() }
+        audio.forEach { clip ->
+            val existing = lanePlayers[clip.id]
+            when {
+                existing == null -> lanePlayers[clip.id] = LanePlayer(clip, createLanePlayer(clip))
+                existing.clip.sameSound(clip) -> existing.clip = clip // only volume/position changed
+                else -> {
+                    existing.clip = clip
+                    existing.exo.pause()
+                    existing.exo.setMediaItem(TimelineMapper.toMediaItem(clip))
+                    existing.exo.prepare()
+                }
+            }
+        }
+    }
+
+    private fun createLanePlayer(clip: AudioClip): ExoPlayer = ExoPlayer.Builder(context).build().apply {
+        // Sound only: never decode the picture of a video source.
+        trackSelectionParameters = trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)
+            .build()
+        setMediaItem(TimelineMapper.toMediaItem(clip))
+        prepare()
+    }
+
+    /** Starts, stops, re-aligns and sets the volume of every audio-lane player. */
+    private fun syncLanes() {
+        val timeUs = _positionUs.value
+        val playing = player.isPlaying
+        lanePlayers.values.forEach { lane ->
+            val clip = lane.clip
+            val offsetUs = timeUs - clip.startUs
+            val inside = playing && offsetUs >= 0 && offsetUs < clip.durationUs && timeUs < durationUs
+            val exo = lane.exo
+            if (!inside) {
+                if (exo.playWhenReady) exo.pause()
+                return@forEach
+            }
+            val targetMs = offsetUs / 1000
+            if (!exo.playWhenReady) {
+                exo.seekTo(targetMs)
+                exo.play()
+            } else if (exo.isPlaying && abs(exo.currentPosition - targetMs) > MAX_DRIFT_MS) {
+                exo.seekTo(targetMs)
+            }
+            exo.volume = clip.gainAt(offsetUs)
+        }
+    }
+
+    private fun pauseLanes() = lanePlayers.values.forEach { if (it.exo.playWhenReady) it.exo.pause() }
+
+    private fun AudioClip.sameSound(other: AudioClip) =
+        source.uri == other.source.uri && trimStartUs == other.trimStartUs && trimEndUs == other.trimEndUs
+
+    private companion object {
+        const val MAX_DRIFT_MS = 200L
+    }
 }
